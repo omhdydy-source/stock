@@ -9,7 +9,7 @@ from openpyxl.chart import LineChart, Reference
 EXCEL_FILE = "C:/Users/omh/Desktop/stock/stock_portfolio_log.xlsx"
 
 def log_portfolio_to_excel():
-    print("📊 [엑셀 로깅 및 시각화 시스템] 종목별 독립 상태 반영 중...")
+    print("📊 [엑셀 로깅 및 시각화 시스템] V4.0 상태 반영 중...")
     
     account_data = fetch_live_account()
     state = load_state()
@@ -30,8 +30,8 @@ def log_portfolio_to_excel():
 
     today_date = datetime.now().strftime("%Y-%m-%d")
     
-    soxl_state = state.get("SOXL", {"cycle": 1, "tranche": 1})
-    tqqq_state = state.get("TQQQ", {"cycle": 1, "tranche": 1})
+    soxl_state = state.get("SOXL", {"cycle": 1, "T": 0.0})
+    tqqq_state = state.get("TQQQ", {"cycle": 1, "T": 0.0})
     
     summary_data = [{
         "날짜": today_date,
@@ -40,8 +40,8 @@ def log_portfolio_to_excel():
         "주식평가금액($)": tot_eval_usd,
         "평가손익($)": tot_profit_usd,
         "수익률(%)": tot_pft_rt,
-        "SOXL(사이클/회차)": f"#{soxl_state['cycle']} / {soxl_state['tranche']}회차",
-        "TQQQ(사이클/회차)": f"#{tqqq_state['cycle']} / {tqqq_state['tranche']}회차"
+        "SOXL(사이클/T)": f"#{soxl_state['cycle']} / T={soxl_state['T']:.1f}",
+        "TQQQ(사이클/T)": f"#{tqqq_state['cycle']} / T={tqqq_state['T']:.1f}"
     }]
     
     df_summary = pd.DataFrame(summary_data)
@@ -122,7 +122,7 @@ def log_portfolio_to_excel():
             
         wb.save(EXCEL_FILE)
         
-    print(f"✅ 엑셀 로깅 완료: {EXCEL_FILE}")
+    print(f"✅ 엑셀 V4.0 로깅 완료: {EXCEL_FILE}")
     return EXCEL_FILE
 
 if __name__ == "__main__":
