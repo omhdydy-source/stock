@@ -1,13 +1,13 @@
 import os
 
-# 실계좌 및 API 설정 (보안 강화: 하드코딩 제거 및 환경변수 필수화)
-NHPLUG_APP_KEY = os.getenv("NHPLUG_APP_KEY")
-NHPLUG_APP_SECRET = os.getenv("NHPLUG_APP_SECRET")
+# 실계좌 및 API 설정
+NHPLUG_APP_KEY = os.getenv("NHPLUG_APP_KEY", "34S96H6NBL7M2X5QK76O3LJ1KNB27WOQ")
+NHPLUG_APP_SECRET = os.getenv("NHPLUG_APP_SECRET", "25EMC8amiaAgpiFFC6HTgMEjIsuS+pNuDJafwpxknB0=")
 NHPLUG_BASE_URL = os.getenv("NHPLUG_BASE_URL", "https://api.nhplug.com:8443")
 ACCOUNT_NO = os.getenv("ACCOUNT_NO", "20601669894")
 
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "8986644696:AAH5Z...")
+CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "8636820058")
 
 # 모니터링 대상 유니버스 (내 보유 종목 + 벤치마크)
 PORTFOLIO_TICKERS = ["SOXL", "IQQ", "TQQQ"]

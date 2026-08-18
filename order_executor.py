@@ -109,7 +109,11 @@ def execute_v4_trading_pipeline(live_execute=False):
         if t_val == 0.0:
             buy_price = round(cur_price * 1.12, 2)
 
-        shares = int(v4["daily_budget"] / cur_price) if cur_price > 0 else 1
+        # V4.0 수량 조절 배수 (Quantity Multiplier: 고가 절반매수 0.5x / 저가 더블매수 2.0x / 정규 1.0x)
+        ratio = cur_price / avg_p if avg_p > 0 else 1.0
+        mult = 0.5 if ratio >= 1.05 else (2.0 if ratio <= 0.95 else 1.0)
+        base_shares = int(v4["daily_budget"] / cur_price) if cur_price > 0 else 1
+        shares = int(base_shares * mult)
         if shares < 1: shares = 1
 
         buy_input = {
