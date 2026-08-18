@@ -1,9 +1,11 @@
 import urllib.request
 import json
+import sys
 from config import TELEGRAM_TOKEN, CHAT_ID
 from data_collector import fetch_live_account, fetch_market_data
 from quant_engine import analyze_portfolio
 from excel_logger import log_portfolio_to_excel
+from order_executor import execute_v4_trading_pipeline
 
 def send_telegram(text):
     if not TELEGRAM_TOKEN or not CHAT_ID:
@@ -16,7 +18,6 @@ def send_telegram(text):
     chunks = [text[i:i+max_length] for i in range(0, len(text), max_length)]
     
     for idx, chunk in enumerate(chunks):
-        # Plain text fallback if markdown fails
         data = json.dumps({"chat_id": CHAT_ID, "text": chunk}).encode('utf-8')
         req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
         try:
@@ -26,25 +27,32 @@ def send_telegram(text):
             print(f"텔레그램 전송 실패: {e}")
 
 def main():
-    print("🏛️ [모듈러 실계좌 퀀트 시스템] 데이터 수집 및 분석 가동...")
+    print("🏛️ [라오어 무한매수법 V4.0 풀오토 퀀트 시스템 가동]...")
     
-    # 1. Excel 로깅 수행
+    # 1. 엑셀 로깅 및 시각화 수행
     try:
         log_portfolio_to_excel()
     except Exception as e:
         print(f"⚠️ 엑셀 로깅 중 오류 발생: {e}")
 
-    # 2. 실계좌 및 시장 데이터 수집
+    # 2. 실계좌 V4.0 자동 주문 집행 (LOC 매수 및 지정가 매도)
+    try:
+        print("🚀 실계좌 V4.0 자동 주문 집행 시작...")
+        execute_v4_trading_pipeline(live_execute=True)
+    except Exception as e:
+        print(f"⚠️ 자동 주문 집행 중 오류 발생: {e}")
+
+    # 3. 실계좌 및 시장 데이터 수집
     account_data = fetch_live_account()
     market_data = fetch_market_data()
     
-    # 3. 포트폴리오 분석 및 리포트 생성
+    # 4. 포트폴리오 분석 및 V4.0 리포트 생성
     report = analyze_portfolio(account_data, market_data)
     print("\n" + report + "\n")
     
-    # 4. 텔레그램 전송
+    # 5. 텔레그램 전송
     send_telegram(report)
-    print("✅ 모든 프로세스가 완료되었습니다!")
+    print("✅ 모든 V4.0 자동화 프로세스가 완료되었습니다!")
 
 if __name__ == "__main__":
     main()
