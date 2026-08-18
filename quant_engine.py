@@ -10,17 +10,18 @@ def load_state():
     if os.path.exists(STATE_FILE):
         try:
             with open(STATE_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+                if "SOXL" not in data or "TQQQ" not in data:
+                    return {
+                        "SOXL": {"cycle": 1, "tranche": 1, "total_tranches": 40},
+                        "TQQQ": {"cycle": 1, "tranche": 1, "total_tranches": 40}
+                    }
+                return data
         except Exception:
             pass
     return {
-        "cycle": 1,
-        "tranche": 1,
-        "total_tranches": 40,
-        "soxl_shares": 0,
-        "soxl_invested": 0.0,
-        "tqqq_shares": 0,
-        "tqqq_invested": 0.0
+        "SOXL": {"cycle": 1, "tranche": 1, "total_tranches": 40},
+        "TQQQ": {"cycle": 1, "tranche": 1, "total_tranches": 40}
     }
 
 def save_state(state):
@@ -60,26 +61,27 @@ def analyze_portfolio(account_data, market_data):
         total_asset_krw = float(summary.get("tot_aet_amt", 0))
         cash_usd = float(summary.get("fc_aet_amt", 0))
         tot_eval_usd = float(summary.get("fc_eal_amt", 0))
-        total_asset_usd = cash_usd + tot_eval_usd
         tot_profit_usd = float(summary.get("fc_eal_pls_amt", 0))
         tot_pft_rt = float(summary.get("pft_rt", 0))
 
     report_lines = [
-        "🎯 *[월 10% 목표 라오어 무한매수 + 퀀트 시스템 브리핑]*",
+        "🎯 *[월 10% 목표 라오어 무한매수 + 종목별 독립 퀀트 시스템]*",
         f"📅 보고 일시: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n",
         "━━━━━━━━━━━━━━━━━━━━━━━━",
-        "💼 *1. 실계좌 보유 포지션 및 무한매수 현황*",
+        "💼 *1. 실계좌 보유 포지션 및 종목별 무한매수 현황*",
         "━━━━━━━━━━━━━━━━━━━━━━━━",
         f"• **총 평가 자산**: `₩{total_asset_krw:,.0f}` (`${total_asset_usd:,.2f}`)",
         f"• **가용 현금 (예수금)**: `${cash_usd:,.2f}`",
         f"• **보유주식 평가금액**: `${tot_eval_usd:,.2f}`",
-        f"• **현재 사이클 회차**: `[ {state['tranche']}회차 / {state['total_tranches']}회차 ]` (사이클 #{state['cycle']})",
-        f"• **현재 총 평가 손익**: `${tot_profit_usd:+,.2f}` (`{tot_pft_rt:+.2f}%`)\n"
+        f"• **전체 평가 손익**: `${tot_profit_usd:+,.2f}` (`{tot_pft_rt:+.2f}%`)",
+        f"• **종목별 진행 회차**:",
+        f"  - SOXL: `[ {state['SOXL']['tranche']}회차 / 40회차 ]` (사이클 #{state['SOXL']['cycle']})",
+        f"  - TQQQ: `[ {state['TQQQ']['tranche']}회차 / 40회차 ]` (사이클 #{state['TQQQ']['cycle']})\n"
     ]
 
     holdings_dict = {}
     if account_data and "Output_1" in account_data:
-        report_lines.append("📌 *보유 종목별 트레이딩 현황 및 익절 목표*:")
+        report_lines.append("📌 *보유 종목별 트레이딩 현황 및 독립 익절 목표*:")
         for h in account_data["Output_1"]:
             name = h.get("iem_nm")
             code = h.get("iem_cd")
@@ -88,7 +90,7 @@ def analyze_portfolio(account_data, market_data):
             cur_p = float(h.get("fc_sec_end_pr", 0))
             pft = float(h.get("eal_pft_rt", 0))
             
-            # 라오어 규칙: SOXL은 +20% 익절, TQQQ는 +10% 익절
+            # 종목별 독립 익절 목표: SOXL은 +20%, TQQQ(기타)는 +10%
             target_pct = 20.0 if code == "SOXL" else 10.0
             target_price = avg_p * (1.0 + target_pct / 100.0) if avg_p > 0 else 0.0
             
@@ -101,7 +103,7 @@ def analyze_portfolio(account_data, market_data):
                 "target_price": target_price
             }
             
-            status_note = f"🎯 익절목표 +{target_pct}% 도달 임박!" if pft >= (target_pct - 2.0) else f"진행중 (목표: +{target_pct}%, 목표가: ${target_price:.2f})"
+            status_note = f"🎯 익절목표 +{target_pct}% 달성 임박!" if pft >= (target_pct - 2.0) else f"진행중 (목표: +{target_pct}%, 목표가: ${target_price:.2f})"
             report_lines.append(f"  • *{code}* (`{name}`): `{qty}주` | 평단: `${avg_p:.2f}` | 현재가: `${cur_p:.2f}`")
             report_lines.append(f"    - 수익률: `{pft:+.2f}%` | 익절목표가: `${target_price:.2f}` (+{target_pct}%) [{status_note}]")
 
@@ -142,45 +144,51 @@ def analyze_portfolio(account_data, market_data):
         rating = fear_greed["rating"].upper()
         report_lines.append(f"• **공포·탐욕 지수 (Fear & Greed)**: `{score:.1f}` ({rating})")
 
-    # Infinite Buy Tranche Execution Guide with Correct Target Profits (SOXL: +20%, TQQQ: +10%)
+    # Independent Per-Ticker Take Profit and Execution Guide
     report_lines.extend([
         "\n━━━━━━━━━━━━━━━━━━━━━━━━",
-        "🚀 *3. 오늘자 라오어 무한매수법 실행 가이드 (SOXL +20% / TQQQ +10% 익절 기준)*",
+        "🚀 *3. 종목별 독립 라오어 무한매수법 실행 가이드*",
         "━━━━━━━━━━━━━━━━━━━━━━━━"
     ])
 
-    # Check if any holding hit its target profit
-    hit_take_profit = False
-    for code, info in holdings_dict.items():
-        if info["pft"] >= info["target_pct"]:
-            hit_take_profit = True
-            report_lines.append(f"🎉 **[{code} 목표 수익 +{info['target_pct']}% 달성 익절 알림!]**")
-            report_lines.append(f"  - 현재 {code} 수익률이 `{info['pft']:+.2f}%`로 목표치(+{info['target_pct']}%)를 달성했습니다!")
-            report_lines.append(f"  - **지금 즉시 {code} 보유 물량을 전량 매도(익절)하세요!**\n")
+    # Check individual take profits
+    soxl_hit = holdings_dict.get("SOXL", {}).get("pft", 0) >= 20.0
+    tqqq_hit = holdings_dict.get("TQQQ", {}).get("pft", 0) >= 10.0
 
-    if not hit_take_profit and is_bullish:
-        remaining_tranches = max(1, state["total_tranches"] - state["tranche"] + 1)
-        tranche_budget = min(cash_usd / remaining_tranches, 1000.0)
-        half_budget = tranche_budget / 2.0
+    if soxl_hit:
+        report_lines.append("🎉 **[SOXL 목표 수익 +20% 달성 익절 알림!]**")
+        report_lines.append("  - SOXL 수익률이 +20%를 달성했습니다! SOXL 물량을 전량 매도하고 사이클을 1회차로 리셋하세요.\n")
+    if tqqq_hit:
+        report_lines.append("🎉 **[TQQQ 목표 수익 +10% 달성 익절 알림!]**")
+        report_lines.append("  - TQQQ 수익률이 +10%를 달성했습니다! TQQQ 물량을 전량 매도하고 사이클을 1회차로 리셋하세요.\n")
 
-        soxl_shares = int(half_budget / curr_soxl) if curr_soxl > 0 else 0
+    if is_bullish:
+        # Independent budget allocation per ticker
+        soxl_rem = max(1, 40 - state["SOXL"]["tranche"] + 1)
+        tqqq_rem = max(1, 40 - state["TQQQ"]["tranche"] + 1)
+        
+        soxl_budget = min((cash_usd / 2) / soxl_rem, 500.0)
+        tqqq_budget = min((cash_usd / 2) / tqqq_rem, 500.0)
+
+        soxl_shares = int(soxl_budget / curr_soxl) if curr_soxl > 0 else 0
         if soxl_shares < 1 and cash_usd >= curr_soxl: soxl_shares = 1
         soxl_cost = soxl_shares * curr_soxl
 
-        tqqq_shares = int(half_budget / curr_tqqq) if curr_tqqq > 0 else 0
+        tqqq_shares = int(tqqq_budget / curr_tqqq) if curr_tqqq > 0 else 0
         if tqqq_shares < 1 and cash_usd >= curr_tqqq: tqqq_shares = 1
         tqqq_cost = tqqq_shares * curr_tqqq
 
-        report_lines.append(f"• **무한매수 모드**: *[정상 진행 중 ({state['tranche']}/{state['total_tranches']}회차)]*")
-        report_lines.append(f"• **오늘 배정된 1회차 예산**: `${tranche_budget:,.2f}` (SOXL / TQQQ 반반 분할)")
-        report_lines.append(f"\n👉 **[SOXL LOC 매수 가이드 ({state['tranche']}회차) - 익절목표 +20%]**")
-        report_lines.append(f"  - **지정가 (이하)**: `${curr_soxl:.2f}` | **수량: `{soxl_shares}주`** (금액: `${soxl_cost:,.2f}`)")
+        report_lines.append("• **무한매수 모드**: *[종목별 독립 정상 진행 중]*")
+        
+        report_lines.append(f"\n👉 **[SOXL LOC 매수 가이드 ({state['SOXL']['tranche']}회차 / 사이클 #{state['SOXL']['cycle']}) - 익절목표 +20%]**")
+        report_lines.append(f"  - **지정가 (이하)**: `${curr_soxl:.2f}` | **수량: `{soxl_shares}주`** (금액: `${soxl_cost:,.2f}`) [익절목표가: `${curr_soxl * 1.2:.2f}`]")
 
-        report_lines.append(f"\n👉 **[TQQQ LOC 매수 가이드 ({state['tranche']}회차) - 익절목표 +10%]**")
-        report_lines.append(f"  - **지정가 (이하)**: `${curr_tqqq:.2f}` | **수량: `{tqqq_shares}주`** (금액: `${tqqq_cost:,.2f}`)")
-        report_lines.append(f"\n💡 *오늘 밤 정규장 마감 동시호가에 위 가격으로 LOC(장마감 지정가) 주문을 접수하세요.*")
-    elif not hit_take_profit:
-        report_lines.append("• **무한매수 모드**: *[하락장 방어 중 - 신규 매수 일시정지]*")
-        report_lines.append(f"  - 나스닥이 200일선 아래이므로 무한매수 40분할 매수를 일시 중단하고 **현재 가용 현금(${cash_usd:,.2f})을 안전하게 보호**합니다.")
+        report_lines.append(f"\n👉 **[TQQQ LOC 매수 가이드 ({state['TQQQ']['tranche']}회차 / 사이클 #{state['TQQQ']['cycle']}) - 익절목표 +10%]**")
+        report_lines.append(f"  - **지정가 (이하)**: `${curr_tqqq:.2f}` | **수량: `{tqqq_shares}주`** (금액: `${tqqq_cost:,.2f}`) [익절목표가: `${curr_tqqq * 1.1:.2f}`]")
+        
+        report_lines.append(f"\n💡 *오늘 밤 정규장 마감 동시호가에 각각 독립된 회차와 가격으로 LOC 주문을 접수하세요.*")
+    else:
+        report_lines.append("• **무한매수 모드**: *[하락장 방어 중 - 종목별 신규 매수 일시정지]*")
+        report_lines.append(f"  - 나스닥이 200일선 아래이므로 신규 매수를 중단하고 **가용 현금(${cash_usd:,.2f})을 보호**합니다.")
 
     return "\n".join(report_lines)

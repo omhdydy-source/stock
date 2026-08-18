@@ -9,7 +9,7 @@ from openpyxl.chart import LineChart, Reference
 EXCEL_FILE = "C:/Users/omh/Desktop/stock/stock_portfolio_log.xlsx"
 
 def log_portfolio_to_excel():
-    print("📊 [엑셀 로깅 및 시각화 시스템] 한글화 및 날짜 포맷 적용 중...")
+    print("📊 [엑셀 로깅 및 시각화 시스템] 종목별 독립 상태 반영 중...")
     
     account_data = fetch_live_account()
     state = load_state()
@@ -28,8 +28,10 @@ def log_portfolio_to_excel():
         tot_profit_usd = float(summary.get("fc_eal_pls_amt", 0))
         tot_pft_rt = float(summary.get("pft_rt", 0))
 
-    # 날짜만 표시 (YYYY-MM-DD)
     today_date = datetime.now().strftime("%Y-%m-%d")
+    
+    soxl_state = state.get("SOXL", {"cycle": 1, "tranche": 1})
+    tqqq_state = state.get("TQQQ", {"cycle": 1, "tranche": 1})
     
     summary_data = [{
         "날짜": today_date,
@@ -38,8 +40,8 @@ def log_portfolio_to_excel():
         "주식평가금액($)": tot_eval_usd,
         "평가손익($)": tot_profit_usd,
         "수익률(%)": tot_pft_rt,
-        "사이클": state["cycle"],
-        "회차": state["tranche"]
+        "SOXL(사이클/회차)": f"#{soxl_state['cycle']} / {soxl_state['tranche']}회차",
+        "TQQQ(사이클/회차)": f"#{tqqq_state['cycle']} / {tqqq_state['tranche']}회차"
     }]
     
     df_summary = pd.DataFrame(summary_data)
@@ -59,14 +61,12 @@ def log_portfolio_to_excel():
             
     df_holdings = pd.DataFrame(holdings_list)
     
-    # Read existing or create new with Korean sheet names
     sheet_summary = "자산요약"
     sheet_holdings = "보유종목"
     
     if os.path.exists(EXCEL_FILE):
         try:
             existing_summary = pd.read_excel(EXCEL_FILE, sheet_name=sheet_summary)
-            # 중복 날짜 업데이트 또는 누적
             updated_summary = pd.concat([existing_summary, df_summary], ignore_index=True)
         except Exception:
             updated_summary = df_summary
@@ -80,13 +80,11 @@ def log_portfolio_to_excel():
         updated_summary = df_summary
         updated_holdings = df_holdings
         
-    # Write back to Excel
     with pd.ExcelWriter(EXCEL_FILE, engine='openpyxl') as writer:
         updated_summary.to_excel(writer, sheet_name=sheet_summary, index=False)
         if not updated_holdings.empty:
             updated_holdings.to_excel(writer, sheet_name=sheet_holdings, index=False)
             
-    # Add Visual Charts using openpyxl
     wb = openpyxl.load_workbook(EXCEL_FILE)
     if sheet_summary in wb.sheetnames:
         ws = wb[sheet_summary]
@@ -94,7 +92,6 @@ def log_portfolio_to_excel():
         
         max_row = ws.max_row
         if max_row > 1:
-            # 1. 총평가자산 차트
             chart = LineChart()
             chart.title = "포트폴리오 총평가자산(원) 추이"
             chart.style = 13
@@ -103,14 +100,13 @@ def log_portfolio_to_excel():
             chart.width = 18
             chart.height = 10
             
-            data = Reference(ws, min_col=2, min_row=1, max_row=max_row) # 총평가자산(원)
-            cats = Reference(ws, min_col=1, min_row=2, max_row=max_row) # 날짜
+            data = Reference(ws, min_col=2, min_row=1, max_row=max_row)
+            cats = Reference(ws, min_col=1, min_row=2, max_row=max_row)
             
             chart.add_data(data, titles_from_data=True)
             chart.set_categories(cats)
             ws.add_chart(chart, "J2")
             
-            # 2. 수익률 차트
             chart2 = LineChart()
             chart2.title = "포트폴리오 수익률(%) 추이"
             chart2.style = 2
@@ -119,14 +115,14 @@ def log_portfolio_to_excel():
             chart2.width = 18
             chart2.height = 10
             
-            data2 = Reference(ws, min_col=6, min_row=1, max_row=max_row) # 수익률(%)
+            data2 = Reference(ws, min_col=6, min_row=1, max_row=max_row)
             chart2.add_data(data2, titles_from_data=True)
             chart2.set_categories(cats)
             ws.add_chart(chart2, "J18")
             
         wb.save(EXCEL_FILE)
         
-    print(f"✅ 엑셀 한글화 및 날짜 포맷 적용 완료: {EXCEL_FILE}")
+    print(f"✅ 엑셀 로깅 완료: {EXCEL_FILE}")
     return EXCEL_FILE
 
 if __name__ == "__main__":
