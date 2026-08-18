@@ -94,6 +94,45 @@ def run_multi_asset_backtest(tickers_to_test):
             print(f"Backtest error for {ticker}: {e}")
     return results
 
+
+def fetch_real_portfolio():
+    app_key = os.getenv("NHPLUG_APP_KEY")
+    app_secret = os.getenv("NHPLUG_APP_SECRET")
+    base_url = os.getenv("NHPLUG_BASE_URL", "https://api.nhplug.com:8443")
+    account_no = os.getenv("NHPLUG_DEFAULT_ACCOUNT", "20601669894")
+    if not app_key or not app_secret:
+        return None
+    try:
+        import urllib.parse
+        params = {"appkey": app_key, "appsecretkey": app_secret, "grant_type": "client_credentials", "scope": "oob"}
+        url = f"{base_url}/oauth2/token?{urllib.parse.urlencode(params)}"
+        req = urllib.request.Request(url, data=b"", headers={"content-type": "application/x-www-form-urlencoded"}, method="POST")
+        with urllib.request.urlopen(req) as resp:
+            token = json.loads(resp.read().decode("utf-8"))["access_token"]
+
+        bal_url = f"{base_url}/gbstock/inquiry/v1/balance"
+        payload = {
+            "Input_0": {
+                "act_no": account_no,
+                "qut_iqr_dit_cd": "9",
+                "fc_sec_trd_nat_cd": "200",
+                "cur_cd": "USD"
+            }
+        }
+        req_data = json.dumps(payload).encode("utf-8")
+        bal_req = urllib.request.Request(bal_url, data=req_data, headers={
+            "Content-Type": "application/json",
+            "authorization": f"Bearer {token}",
+            "appkey": app_key,
+            "appsecret": app_secret
+        }, method="POST")
+
+        with urllib.request.urlopen(bal_req) as bal_resp:
+            return json.loads(bal_resp.read().decode("utf-8"))
+    except Exception as e:
+        print(f"Warning: Could not fetch real portfolio: {e}")
+        return None
+
 def run_ai_hedge_fund():
     print("🏛️ AI 헤지펀드 팀별 브리핑 스크립트 가동...")
 
@@ -343,15 +382,37 @@ def run_ai_hedge_fund():
     send_telegram(team2_report)
 
     # ==========================================
-    # [팀 3] 퀀트 전략 팀
+    # [팀 3] 퀀트 전략 팀 (실계좌 연동)
     # ==========================================
+    real_portfolio = fetch_real_portfolio()
+    my_shares = MY_SHARES
+    my_avg_price = MY_AVG_PRICE
+    available_cash = AVAILABLE_CASH
+    actual_holdings_text = []
+
+    if real_portfolio and "Output_1" in real_portfolio:
+        holdings = real_portfolio["Output_1"]
+        for h in holdings:
+            code = h.get("iem_cd")
+            name = h.get("iem_nm")
+            qty = float(h.get("cns_bse_bnc_qty", 0))
+            avg_p = float(h.get("fc_phs_uit_pr", 0))
+            cur_p = float(h.get("fc_sec_end_pr", 0))
+            pft = float(h.get("eal_pft_rt", 0))
+            actual_holdings_text.append(f"  • {name} ({code}): `{qty}주` | 평단: `${avg_p:.2f}` | 현재가: `${cur_p:.2f}` (수익률: `{pft:+.2f}%`)")
+            if code == "TQQQ":
+                my_shares = qty
+                my_avg_price = avg_p if avg_p > 0 else 73.66
+        summary = real_portfolio.get("Output_0", {})
+        available_cash = float(summary.get("fc_abk_amt", 1000.0))
+
     tqqq_df = yf.Ticker('TQQQ').history(period='5d')
-    curr_tqqq = float(tqqq_df['Close'].iloc[-1]) if not tqqq_df.empty else MY_AVG_PRICE
-    my_eval_profit_pct = ((curr_tqqq - MY_AVG_PRICE) / MY_AVG_PRICE) * 100
-    my_eval_profit_usd = (curr_tqqq - MY_AVG_PRICE) * MY_SHARES
-    dip_buy_price = MY_AVG_PRICE * (1 - DIP_BUY_PCT)
+    curr_tqqq = float(tqqq_df['Close'].iloc[-1]) if not tqqq_df.empty else my_avg_price
+    my_eval_profit_pct = ((curr_tqqq - my_avg_price) / my_avg_price) * 100 if my_avg_price > 0 else 0
+    my_eval_profit_usd = (curr_tqqq - my_avg_price) * my_shares
+    dip_buy_price = my_avg_price * (1 - DIP_BUY_PCT)
     breakout_buy_price = curr_tqqq * 1.02
-    suggested_shares = int((AVAILABLE_CASH * 0.3) / dip_buy_price)
+    suggested_shares = int((available_cash * 0.3) / dip_buy_price) if dip_buy_price > 0 else 1
 
     is_bullish = curr_q > sma_200
     if is_bullish:
@@ -382,7 +443,7 @@ def run_ai_hedge_fund():
         "━━━━━━━━━━━━━━━━━━━━━━━━",
         "📈 *3. 퀀트 전략 팀 (포지션 분석 & 매수가이드)*",
         "━━━━━━━━━━━━━━━━━━━━━━━━",
-        f"• **내 포지션**: TQQQ {MY_SHARES}주 보유 (평단가: `{MY_AVG_PRICE:.2f}`)",
+        f"• **내 실계좌 포지션 (실시간 연동)**:\n" + "\n".join(actual_holdings_text) if actual_holdings_text else f"• **내 포지션**: TQQQ {my_shares}주 보유 (평단가: `{my_avg_price:.2f}`)",
         f"• **현재가 평가**: `{curr_tqqq:.2f}` (수익률: `{my_eval_profit_pct:+.2f}%` / 평가손익: `{my_eval_profit_usd:+,.2f}`) ",
         f"• 거시 추세 판정: {trend_signal}",
         strategy_detail
