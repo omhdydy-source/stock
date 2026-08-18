@@ -61,8 +61,45 @@ def analyze_portfolio(account_data, market_data):
         total_asset_krw = float(summary.get("tot_aet_amt", 0))
         cash_usd = float(summary.get("fc_aet_amt", 0))
         tot_eval_usd = float(summary.get("fc_eal_amt", 0))
+        total_asset_usd = cash_usd + tot_eval_usd
         tot_profit_usd = float(summary.get("fc_eal_pls_amt", 0))
         tot_pft_rt = float(summary.get("pft_rt", 0))
+
+    # 보유 종목 수량 파악을 위한 딕셔너리 생성
+    holdings_dict = {}
+    if account_data and "Output_1" in account_data:
+        for h in account_data["Output_1"]:
+            code = h.get("iem_cd")
+            qty = float(h.get("cns_bse_bnc_qty", 0))
+            avg_p = float(h.get("fc_phs_uit_pr", 0))
+            cur_p = float(h.get("fc_sec_end_pr", 0))
+            pft = float(h.get("eal_pft_rt", 0))
+            
+            target_pct = 20.0 if code == "SOXL" else 10.0
+            target_price = avg_p * (1.0 + target_pct / 100.0) if avg_p > 0 else 0.0
+            
+            holdings_dict[code] = {
+                "qty": qty,
+                "avg_p": avg_p,
+                "cur_p": cur_p,
+                "pft": pft,
+                "target_pct": target_pct,
+                "target_price": target_price
+            }
+
+    # 🔄 스마트 오토 리셋 감지 (보유 수량이 0주이거나 전량 매도된 경우 자동 사이클 리셋)
+    state_updated = False
+    for ticker in ["SOXL", "TQQQ"]:
+        holding_qty = holdings_dict.get(ticker, {}).get("qty", 0.0)
+        # 만약 계좌 내 해당 종목 수량이 0이고, 회차가 1회차를 초과했거나 직전 익절 달성 상태였다면 새 사이클로 자동 전환
+        if holding_qty == 0 and state[ticker]["tranche"] > 1:
+            print(f"🔄 [{ticker}] 보유 수량이 0주입니다. 이전 사이클 익절 완료로 감지하여 사이클 #{state[ticker]['cycle'] + 1}, 1회차로 자동 리셋합니다!")
+            state[ticker]["cycle"] += 1
+            state[ticker]["tranche"] = 1
+            state_updated = True
+
+    if state_updated:
+        save_state(state)
 
     report_lines = [
         "🎯 *[월 10% 목표 라오어 무한매수 + 종목별 독립 퀀트 시스템]*",
@@ -79,33 +116,12 @@ def analyze_portfolio(account_data, market_data):
         f"  - TQQQ: `[ {state['TQQQ']['tranche']}회차 / 40회차 ]` (사이클 #{state['TQQQ']['cycle']})\n"
     ]
 
-    holdings_dict = {}
-    if account_data and "Output_1" in account_data:
+    if holdings_dict:
         report_lines.append("📌 *보유 종목별 트레이딩 현황 및 독립 익절 목표*:")
-        for h in account_data["Output_1"]:
-            name = h.get("iem_nm")
-            code = h.get("iem_cd")
-            qty = float(h.get("cns_bse_bnc_qty", 0))
-            avg_p = float(h.get("fc_phs_uit_pr", 0))
-            cur_p = float(h.get("fc_sec_end_pr", 0))
-            pft = float(h.get("eal_pft_rt", 0))
-            
-            # 종목별 독립 익절 목표: SOXL은 +20%, TQQQ(기타)는 +10%
-            target_pct = 20.0 if code == "SOXL" else 10.0
-            target_price = avg_p * (1.0 + target_pct / 100.0) if avg_p > 0 else 0.0
-            
-            holdings_dict[code] = {
-                "qty": qty,
-                "avg_p": avg_p,
-                "cur_p": cur_p,
-                "pft": pft,
-                "target_pct": target_pct,
-                "target_price": target_price
-            }
-            
-            status_note = f"🎯 익절목표 +{target_pct}% 달성 임박!" if pft >= (target_pct - 2.0) else f"진행중 (목표: +{target_pct}%, 목표가: ${target_price:.2f})"
-            report_lines.append(f"  • *{code}* (`{name}`): `{qty}주` | 평단: `${avg_p:.2f}` | 현재가: `${cur_p:.2f}`")
-            report_lines.append(f"    - 수익률: `{pft:+.2f}%` | 익절목표가: `${target_price:.2f}` (+{target_pct}%) [{status_note}]")
+        for code, info in holdings_dict.items():
+            status_note = f"🎯 익절목표 +{info['target_pct']}% 달성 임박!" if info['pft'] >= (info['target_pct'] - 2.0) else f"진행중 (목표: +{info['target_pct']}%, 목표가: ${info['target_price']:.2f})"
+            report_lines.append(f"  • *{code}*: `{info['qty']}주` | 평단: `${info['avg_p']:.2f}` | 현재가: `${info['cur_p']:.2f}`")
+            report_lines.append(f"    - 수익률: `{info['pft']:+.2f}%` | 익절목표가: `${info['target_price']:.2f}` (+{info['target_pct']}%) [{status_note}]")
 
     # Macro Trend Analysis
     report_lines.extend([
@@ -144,26 +160,14 @@ def analyze_portfolio(account_data, market_data):
         rating = fear_greed["rating"].upper()
         report_lines.append(f"• **공포·탐욕 지수 (Fear & Greed)**: `{score:.1f}` ({rating})")
 
-    # Independent Per-Ticker Take Profit and Execution Guide
+    # Execution Guide
     report_lines.extend([
         "\n━━━━━━━━━━━━━━━━━━━━━━━━",
         "🚀 *3. 종목별 독립 라오어 무한매수법 실행 가이드*",
         "━━━━━━━━━━━━━━━━━━━━━━━━"
     ])
 
-    # Check individual take profits
-    soxl_hit = holdings_dict.get("SOXL", {}).get("pft", 0) >= 20.0
-    tqqq_hit = holdings_dict.get("TQQQ", {}).get("pft", 0) >= 10.0
-
-    if soxl_hit:
-        report_lines.append("🎉 **[SOXL 목표 수익 +20% 달성 익절 알림!]**")
-        report_lines.append("  - SOXL 수익률이 +20%를 달성했습니다! SOXL 물량을 전량 매도하고 사이클을 1회차로 리셋하세요.\n")
-    if tqqq_hit:
-        report_lines.append("🎉 **[TQQQ 목표 수익 +10% 달성 익절 알림!]**")
-        report_lines.append("  - TQQQ 수익률이 +10%를 달성했습니다! TQQQ 물량을 전량 매도하고 사이클을 1회차로 리셋하세요.\n")
-
     if is_bullish:
-        # Independent budget allocation per ticker
         soxl_rem = max(1, 40 - state["SOXL"]["tranche"] + 1)
         tqqq_rem = max(1, 40 - state["TQQQ"]["tranche"] + 1)
         
