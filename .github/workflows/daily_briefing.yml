@@ -2,7 +2,7 @@ name: AI Hedge Fund Daily Briefing & Auto Trading
 
 on:
   schedule:
-    - cron: '0 21 * * 0-4' # 매주 월~금 아침 6시 (한국 시간 기준) = UTC 21시 (일~목) [큐 지연 감안]
+    - cron: '0 1 * * 1-5' # 매주 월~금 오전 10시 (한국 시간 기준) = UTC 01시 (월~금) [큐 지연 및 오전 08시 이후 접수 반영]
   workflow_dispatch: # GitHub 웹에서 수동 실행 버튼 활성화
 
 jobs:
