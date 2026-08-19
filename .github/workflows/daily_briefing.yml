@@ -2,10 +2,10 @@ name: AI Hedge Fund Daily Briefing & Auto Trading
 
 on:
   schedule:
-    - cron: '0 1 * * 1-5' # 매주 월~금 오전 10시 (한국 시간 기준) = UTC 01시 (월~금) [큐 지연 및 오전 08시 이후 접수 반영]
-  workflow_dispatch: # GitHub 웹에서 수동 실행 버튼 활성화
+    - cron: '0 1 * * 1-5' # 매주 월~금 오전 10시 (한국 시간 기준) = UTC 01시 (월~금)
+  workflow_dispatch: # GitHub 웹 및 단축어 수동/원격 실행용
   repository_dispatch:
-    types: [run-stock-bot] # 아이폰 단축어 등 외부 API 원격 실행용
+    types: [run-stock-bot, workflow_dispatch]
 
 jobs:
   run-bot:
@@ -18,7 +18,7 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-          cache: 'pip' # 파이썬 패키지 캐싱 활성화로 설치 속도 극대화
+          cache: 'pip'
 
       - name: Upgrade pip & Install dependencies
         run: |
