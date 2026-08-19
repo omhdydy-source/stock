@@ -6,7 +6,8 @@ from quant_engine import load_state
 import openpyxl
 from openpyxl.chart import LineChart, Reference
 
-EXCEL_FILE = "C:/Users/omh/Desktop/stock/stock_portfolio_log.xlsx"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+EXCEL_FILE = os.path.join(BASE_DIR, "stock_portfolio_log.xlsx")
 
 def log_portfolio_to_excel():
     print("📊 [엑셀 로깅 및 시각화 시스템] V4.0 상태 반영 중...")

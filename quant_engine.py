@@ -4,7 +4,8 @@ import pandas as pd
 import yfinance as yf
 from datetime import datetime
 
-STATE_FILE = "C:/Users/omh/Desktop/stock/infinite_v4_state.json"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATE_FILE = os.path.join(BASE_DIR, "infinite_v4_state.json")
 
 def load_state():
     if os.path.exists(STATE_FILE):
