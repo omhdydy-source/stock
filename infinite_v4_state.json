@@ -1,12 +1,12 @@
 {
   "SOXL": {
     "cycle": 1,
-    "T": 1.0,
+    "T": 4.0,
     "total_tranches": 40
   },
   "TQQQ": {
     "cycle": 1,
-    "T": 1.0,
+    "T": 4.0,
     "total_tranches": 40
   }
 }

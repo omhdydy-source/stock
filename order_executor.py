@@ -70,6 +70,7 @@ def execute_v4_trading_pipeline(live_execute=False):
     curr_tqqq = get_current_price("TQQQ", 76.0)
 
     orders_to_place = []
+    t_deltas = {}
     today_str = datetime.now().strftime("%Y%m%d")
 
     # 🛡️ 중복 실행 방지 가드 (Idempotency Guard)
@@ -127,6 +128,7 @@ def execute_v4_trading_pipeline(live_execute=False):
         shares = int(base_shares * mult)
         if shares < 1: shares = 1
 
+        t_deltas[code] = mult
         buy_input = {
             "act_no": ACCOUNT_NO,
             "fc_sec_trd_nat_cd": "200",
@@ -157,8 +159,16 @@ def execute_v4_trading_pipeline(live_execute=False):
 
     if live_execute and orders_to_place:
         state["last_order_date"] = today_str
+        # 🔄 V4.0 회차(T) 자동 증가 반영 (주문 발송 시 매수 배수만큼 T값 업데이트)
+        for code, t_delta in t_deltas.items():
+            old_t = state.get(code, {}).get("T", 0.0)
+            new_t = old_t + t_delta
+            if code in state:
+                state[code]["T"] = round(new_t, 2)
+            print(f"📈 [{code}] 회차(T값) 업데이트: T={old_t:.1f} ➔ T={state[code]['T']:.1f} (+{t_delta} 반영)")
+
         save_state(state)
-        print(f"🔒 [중복 방지] 상태 파일에 오늘 날짜({today_str}) 주문 완료 기록 저장 완료.")
+        print(f"🔒 [중복 방지 & 상태 업데이트] 상태 파일에 오늘 날짜({today_str}) 및 T값 저장 완료.")
 
     return orders_to_place
 
