@@ -195,11 +195,22 @@ def analyze_portfolio(account_data, market_data):
     ])
 
     if is_bullish:
-        soxl_avg = holdings_dict.get("SOXL", {}).get("avg_p", curr_soxl)
-        tqqq_avg = holdings_dict.get("TQQQ", {}).get("avg_p", curr_tqqq)
+        soxl_info = holdings_dict.get("SOXL", {})
+        tqqq_info = holdings_dict.get("TQQQ", {})
+
+        soxl_avg = soxl_info.get("avg_p", curr_soxl)
+        soxl_qty = int(soxl_info.get("qty", 0))
+        tqqq_avg = tqqq_info.get("avg_p", curr_tqqq)
+        tqqq_qty = int(tqqq_info.get("qty", 0))
 
         soxl_v4 = calculate_v4_params("SOXL", soxl_avg, state["SOXL"]["T"], cash_usd / 2)
         tqqq_v4 = calculate_v4_params("TQQQ", tqqq_avg, state["TQQQ"]["T"], cash_usd / 2)
+
+        soxl_q_qty = int(soxl_qty * 0.25) if soxl_qty >= 4 else 0
+        soxl_m_qty = soxl_qty - soxl_q_qty
+
+        tqqq_q_qty = int(tqqq_qty * 0.25) if tqqq_qty >= 4 else 0
+        tqqq_m_qty = tqqq_qty - tqqq_q_qty
 
         # V4.0 수량 조절 배수 (Quantity Multiplier: 고가 절반매수 0.5x / 저가 더블매수 2.0x / 정규 1.0x)
         soxl_ratio = curr_soxl / soxl_avg if soxl_avg > 0 else 1.0
@@ -218,11 +229,13 @@ def analyze_portfolio(account_data, market_data):
         
         report_lines.append(s := f"\n👉 **[SOXL V4.0 가이드 (T={state['SOXL']['T']:.1f} 회차 / 사이클 #{state['SOXL']['cycle']})]**")
         report_lines.append(f"  - **별지점 LOC 매수**: `${soxl_v4['buy_point']:.2f}` (별% {soxl_v4['star_pct']:+.2f}%) | 수량: `{soxl_shares}주` (배수: `{soxl_mult}x`)")
-        report_lines.append(f"  - **쿼터매도(25%)**: 별지점 `${soxl_v4['star_point']:.2f}` | **최종지정가매도(75%):** `${soxl_v4['take_profit_price']:.2f}` (+20%)")
+        report_lines.append(f"  - **쿼터매도(25%)**: `{soxl_q_qty}주` @ 별지점 `${soxl_v4['star_point']:.2f}` (LOC)")
+        report_lines.append(f"  - **최종지정가매도({75 if soxl_q_qty > 0 else 100}%)**: `{soxl_m_qty}주` @ `${soxl_v4['take_profit_price']:.2f}` (+20%)")
 
         report_lines.append(s := f"\n👉 **[TQQQ V4.0 가이드 (T={state['TQQQ']['T']:.1f} 회차 / 사이클 #{state['TQQQ']['cycle']})]**")
         report_lines.append(f"  - **별지점 LOC 매수**: `${tqqq_v4['buy_point']:.2f}` (별% {tqqq_v4['star_pct']:+.2f}%) | 수량: `{tqqq_shares}주` (배수: `{tqqq_mult}x`)")
-        report_lines.append(f"  - **쿼터매도(25%)**: 별지점 `${tqqq_v4['star_point']:.2f}` | **최종지정가매도(75%):** `${tqqq_v4['take_profit_price']:.2f}` (+15%)")
+        report_lines.append(f"  - **쿼터매도(25%)**: `{tqqq_q_qty}주` @ 별지점 `${tqqq_v4['star_point']:.2f}` (LOC)")
+        report_lines.append(f"  - **최종지정가매도({75 if tqqq_q_qty > 0 else 100}%)**: `{tqqq_m_qty}주` @ `${tqqq_v4['take_profit_price']:.2f}` (+15%)")
         
         report_lines.append(f"\n💡 *V4.0 공식: 일일 매수금 = 잔금 / (40 - T)*")
     else:
