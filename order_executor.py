@@ -81,32 +81,56 @@ def execute_v4_trading_pipeline(live_execute=False):
     print(f"\n[계좌 상태 요약]")
     print(f"- 가용 현금: ${cash_usd:,.2f}\n")
 
-    # 1. 매도(익절) 예약 주문 생성 로직 (V4.0 무한매수 대상 종목: SOXL +20%, TQQQ +15%)
+    # 1. 매도(익절) 예약 주문 생성 로직 (V4.0: 쿼터매도 25% @ 별지점 LOC + 최종 지정가 매도 75% @ +20%/+15%)
     for code in ["SOXL", "TQQQ"]:
         if code in holdings:
             info = holdings[code]
-            qty = info["qty"]
+            qty = int(info["qty"])
             avg_p = info["avg_p"]
-            pft = info["pft"]
+            t_val = state.get(code, {}).get("T", 0.0)
             
-            target_pct = 20.0 if code == "SOXL" else 15.0
-            target_price = avg_p * (1.0 + target_pct / 100.0) if avg_p > 0 else 0.0
+            v4 = calculate_v4_params(code, avg_p, t_val, cash_usd / 2)
+            star_price = v4["star_point"]
+            target_price = v4["take_profit_price"]
+            target_pct = v4["take_profit_pct"]
 
             if qty > 0:
-                print(f"🎯 [{code}] V4.0 지정가 익절 예약 매도 주문 생성: {int(qty)}주 @ ${target_price:.2f} (+{target_pct}%)")
-                sell_input = {
-                    "act_no": ACCOUNT_NO,
-                    "fc_sec_trd_nat_cd": "200",
-                    "iem_cd": code,
-                    "oss_sby_dit_cd": "1", # 1.매도
-                    "orr_qty": int(qty),
-                    "fc_orr_uit_pr": round(target_price, 2),
-                    "nmn_pr_tp_cd": "00", # 00.지정가
-                    "bkg_orr_tp_cd": "1", # 1.일반예약
-                    "bkg_orr_sta_dt": today_str,
-                    "wtm_cur_knd_cd": "1"
-                }
-                orders_to_place.append(("gbstockOrderReservedSubmit", sell_input))
+                quarter_qty = int(qty * 0.25) if qty >= 4 else 0
+                main_qty = qty - quarter_qty
+
+                # 1-A. 쿼터매도 (25% 수량 @ 별지점 LOC 매도)
+                if quarter_qty > 0:
+                    print(f"🎯 [{code}] V4.0 쿼터매도(25%) 예약 주문 생성: {quarter_qty}주 @ 별지점 ${star_price:.2f} (LOC)")
+                    q_sell_input = {
+                        "act_no": ACCOUNT_NO,
+                        "fc_sec_trd_nat_cd": "200",
+                        "iem_cd": code,
+                        "oss_sby_dit_cd": "1", # 1.매도
+                        "orr_qty": quarter_qty,
+                        "fc_orr_uit_pr": round(star_price, 2),
+                        "nmn_pr_tp_cd": "12",  # 12. LOC (장마감 지정가)
+                        "bkg_orr_tp_cd": "1",  # 1.일반예약
+                        "bkg_orr_sta_dt": today_str,
+                        "wtm_cur_knd_cd": "1"
+                    }
+                    orders_to_place.append(("gbstockOrderReservedSubmit", q_sell_input))
+
+                # 1-B. 최종 지정가 매도 (75% 또는 전체 수량 @ +20%/+15%)
+                if main_qty > 0:
+                    print(f"🎯 [{code}] V4.0 최종 지정가 매도({75 if quarter_qty > 0 else 100}%) 예약 주문 생성: {main_qty}주 @ ${target_price:.2f} (+{target_pct}%)")
+                    m_sell_input = {
+                        "act_no": ACCOUNT_NO,
+                        "fc_sec_trd_nat_cd": "200",
+                        "iem_cd": code,
+                        "oss_sby_dit_cd": "1", # 1.매도
+                        "orr_qty": main_qty,
+                        "fc_orr_uit_pr": round(target_price, 2),
+                        "nmn_pr_tp_cd": "00",  # 00. 지정가
+                        "bkg_orr_tp_cd": "1",  # 1.일반예약
+                        "bkg_orr_sta_dt": today_str,
+                        "wtm_cur_knd_cd": "1"
+                    }
+                    orders_to_place.append(("gbstockOrderReservedSubmit", m_sell_input))
 
     # 2. 매수 (V4.0 별지점 + 큰수 매수 버퍼) 예약 주문 생성 로직
     for code in ["SOXL", "TQQQ"]:
