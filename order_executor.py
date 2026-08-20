@@ -81,8 +81,8 @@ def execute_v4_trading_pipeline(live_execute=False):
     print(f"\n[계좌 상태 요약]")
     print(f"- 가용 현금: ${cash_usd:,.2f}\n")
 
-    # 1. 매도(익절) 예약 주문 생성 로직 (V4.0 최종 지정가 매도: SOXL +20%, TQQQ/기타 +15%)
-    for code in holdings:
+    # 1. 매도(익절) 예약 주문 생성 로직 (V4.0 무한매수 대상 종목: SOXL +20%, TQQQ +15%)
+    for code in ["SOXL", "TQQQ"]:
         if code in holdings:
             info = holdings[code]
             qty = info["qty"]
