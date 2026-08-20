@@ -4,7 +4,7 @@ import os
 NHPLUG_APP_KEY = os.getenv("NHPLUG_APP_KEY")
 NHPLUG_APP_SECRET = os.getenv("NHPLUG_APP_SECRET")
 NHPLUG_BASE_URL = os.getenv("NHPLUG_BASE_URL", "https://api.nhplug.com:8443")
-ACCOUNT_NO = os.getenv("ACCOUNT_NO")
+ACCOUNT_NO = os.getenv("ACCOUNT_NO", "20601669894")
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")

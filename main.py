@@ -29,18 +29,18 @@ def send_telegram(text):
 def main():
     print("🏛️ [라오어 무한매수법 V4.0 풀오토 퀀트 시스템 가동]...")
     
-    # 1. 엑셀 로깅 및 시각화 수행
-    try:
-        log_portfolio_to_excel()
-    except Exception as e:
-        print(f"⚠️ 엑셀 로깅 중 오류 발생: {e}")
-
-    # 2. 실계좌 V4.0 자동 주문 집행 (LOC 매수 및 지정가 매도)
+    # 1. 실계좌 V4.0 자동 주문 집행 (LOC 매수 및 지정가 매도) 및 T값 업데이트
     try:
         print("🚀 실계좌 V4.0 자동 주문 집행 시작...")
         execute_v4_trading_pipeline(live_execute=True)
     except Exception as e:
         print(f"⚠️ 자동 주문 집행 중 오류 발생: {e}")
+
+    # 2. 엑셀 로깅 및 시각화 수행 (업데이트된 T값 반영)
+    try:
+        log_portfolio_to_excel()
+    except Exception as e:
+        print(f"⚠️ 엑셀 로깅 중 오류 발생: {e}")
 
     # 3. 실계좌 및 시장 데이터 수집
     account_data = fetch_live_account()
