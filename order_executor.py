@@ -81,8 +81,8 @@ def execute_v4_trading_pipeline(live_execute=False):
     print(f"\n[계좌 상태 요약]")
     print(f"- 가용 현금: ${cash_usd:,.2f}\n")
 
-    # 1. 매도(익절) 예약 주문 생성 로직 (V4.0 최종 지정가 매도: SOXL +20%, TQQQ +15%)
-    for code in ["SOXL", "TQQQ"]:
+    # 1. 매도(익절) 예약 주문 생성 로직 (V4.0 최종 지정가 매도: SOXL +20%, TQQQ/기타 +15%)
+    for code in holdings:
         if code in holdings:
             info = holdings[code]
             qty = info["qty"]
@@ -92,8 +92,8 @@ def execute_v4_trading_pipeline(live_execute=False):
             target_pct = 20.0 if code == "SOXL" else 15.0
             target_price = avg_p * (1.0 + target_pct / 100.0) if avg_p > 0 else 0.0
 
-            if qty > 0 and pft >= target_pct:
-                print(f"🎉 [{code}] V4.0 목표 수익률 +{target_pct}% 달성! 익절 지정가 예약 매도 주문 생성")
+            if qty > 0:
+                print(f"🎯 [{code}] V4.0 지정가 익절 예약 매도 주문 생성: {int(qty)}주 @ ${target_price:.2f} (+{target_pct}%)")
                 sell_input = {
                     "act_no": ACCOUNT_NO,
                     "fc_sec_trd_nat_cd": "200",
