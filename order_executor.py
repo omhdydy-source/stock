@@ -72,6 +72,11 @@ def execute_v4_trading_pipeline(live_execute=False):
     orders_to_place = []
     today_str = datetime.now().strftime("%Y%m%d")
 
+    # 🛡️ 중복 실행 방지 가드 (Idempotency Guard)
+    if state.get("last_order_date") == today_str:
+        print(f"⚠️ 오늘({today_str}) 이미 V4.0 주문이 실행되었습니다. 중복 주문 방지 차원에서 주문 실행을 건너뜁니다.")
+        return []
+
     print(f"\n[계좌 상태 요약]")
     print(f"- 가용 현금: ${cash_usd:,.2f}\n")
 
@@ -149,6 +154,11 @@ def execute_v4_trading_pipeline(live_execute=False):
             time.sleep(1.5)
         else:
             print(f"💡 (드라이프런 모드 - 실제 전송하려면 --execute 플래그를 붙이세요)")
+
+    if live_execute and orders_to_place:
+        state["last_order_date"] = today_str
+        save_state(state)
+        print(f"🔒 [중복 방지] 상태 파일에 오늘 날짜({today_str}) 주문 완료 기록 저장 완료.")
 
     return orders_to_place
 

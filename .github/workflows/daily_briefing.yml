@@ -7,6 +7,10 @@ on:
   repository_dispatch:
     types: [run-stock-bot, workflow_dispatch]
 
+concurrency:
+  group: stock-bot-execution
+  cancel-in-progress: false
+
 jobs:
   run-bot:
     runs-on: ubuntu-latest
