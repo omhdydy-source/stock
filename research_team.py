@@ -99,7 +99,7 @@ def fetch_real_portfolio():
     app_key = os.getenv("NHPLUG_APP_KEY")
     app_secret = os.getenv("NHPLUG_APP_SECRET")
     base_url = os.getenv("NHPLUG_BASE_URL", "https://api.nhplug.com:8443")
-    account_no = os.getenv("NHPLUG_DEFAULT_ACCOUNT", "20601669894")
+    account_no = os.getenv("ACCOUNT_NO")
     if not app_key or not app_secret:
         return None
     try:
