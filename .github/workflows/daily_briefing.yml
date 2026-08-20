@@ -1,15 +1,9 @@
 name: AI Hedge Fund Daily Briefing & Auto Trading
 
 on:
-  schedule:
-    - cron: '0 1 * * 1-5' # 매주 월~금 오전 10시 (한국 시간 기준) = UTC 01시 (월~금)
   workflow_dispatch: # GitHub 웹 및 단축어 수동/원격 실행용
   repository_dispatch:
     types: [run-stock-bot, workflow_dispatch]
-
-concurrency:
-  group: stock-bot-execution
-  cancel-in-progress: false
 
 jobs:
   run-bot:
