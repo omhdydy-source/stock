@@ -1,8 +1,12 @@
 import os
-from dotenv import load_dotenv
 
-load_dotenv(os.path.join(os.path.dirname(__file__), ".env"), override=True)
+try:
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(os.path.dirname(__file__), ".env"), override=True)
+except ImportError:
+    pass
 
+# 실계좌 및 API 설정 (환경변수 필수)
 NHPLUG_APP_KEY = (os.getenv("NHPLUG_APP_KEY") or "").strip()
 NHPLUG_APP_SECRET = (os.getenv("NHPLUG_APP_SECRET") or "").strip()
 NHPLUG_BASE_URL = (os.getenv("NHPLUG_BASE_URL") or "https://api.nhplug.com:8443").strip()
