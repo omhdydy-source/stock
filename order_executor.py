@@ -168,7 +168,12 @@ def execute_v4_trading_pipeline(live_execute=False):
     print(f"\n[실행할 V4.0 예약 주문 리스트 ({len(orders_to_place)}건)]")
     for idx, (op_id, inp) in enumerate(orders_to_place, 1):
         print(f"--- 주문 #{idx} ({op_id}) ---")
-        print(json.dumps(inp, indent=2, ensure_ascii=False))
+        # 로그 출력용 마스킹 처리 (계좌번호 노출 방지)
+        log_inp = inp.copy()
+        if "act_no" in log_inp and log_inp["act_no"]:
+            acc_str = str(log_inp["act_no"])
+            log_inp["act_no"] = acc_str[:4] + "*" * (len(acc_str) - 4) if len(acc_str) > 4 else "****"
+        print(json.dumps(log_inp, indent=2, ensure_ascii=False))
 
         if live_execute:
             print(f"🚀 실계좌 V4.0 예약 주문 전송 중...")
