@@ -125,15 +125,16 @@ def analyze_portfolio(account_data, market_data):
                 "pft": pft
             }
 
-    # 🔄 스마트 오토 리셋 (보유 수량이 0주인 경우 사이클 완료로 판정하여 리셋)
+    # 🔄 스마트 오토 리셋 (계좌 조회가 성공한 경우에만 보유 수량이 0주인지 확인하여 익절 리셋 수행)
     state_updated = False
-    for ticker in ["SOXL", "TQQQ"]:
-        holding_qty = holdings_dict.get(ticker, {}).get("qty", 0.0)
-        if holding_qty == 0 and state[ticker]["T"] > 0:
-            print(f"🔄 [{ticker}] 보유 수량이 0주입니다. V4.0 익절 완료로 감지하여 사이클 #{state[ticker]['cycle'] + 1}, T=0으로 자동 리셋합니다!")
-            state[ticker]["cycle"] += 1
-            state[ticker]["T"] = 0.0
-            state_updated = True
+    if account_data and "Output_1" in account_data:
+        for ticker in ["SOXL", "TQQQ"]:
+            holding_qty = holdings_dict.get(ticker, {}).get("qty", 0.0)
+            if holding_qty == 0 and state[ticker]["T"] > 0:
+                print(f"🔄 [{ticker}] 보유 수량이 0주입니다. V4.0 익절 완료로 감지하여 사이클 #{state[ticker]['cycle'] + 1}, T=0으로 자동 리셋합니다!")
+                state[ticker]["cycle"] += 1
+                state[ticker]["T"] = 0.0
+                state_updated = True
 
     if state_updated:
         save_state(state)
