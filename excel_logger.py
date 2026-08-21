@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from data_collector import fetch_live_account, fetch_market_data
 from quant_engine import load_state, calculate_v4_params
 import openpyxl
@@ -31,7 +31,8 @@ def log_portfolio_to_excel():
         tot_profit_usd = float(summary.get("fc_eal_pls_amt", 0))
         tot_pft_rt = float(summary.get("pft_rt", 0))
 
-    today_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+    kst = timezone(timedelta(hours=9))
+    today_date = datetime.now(kst).strftime("%Y-%m-%d %H:%M")
     
     soxl_state = state.get("SOXL", {"cycle": 1, "T": 0.0})
     tqqq_state = state.get("TQQQ", {"cycle": 1, "T": 0.0})
