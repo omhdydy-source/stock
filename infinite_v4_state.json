@@ -1,12 +1,12 @@
 {
   "SOXL": {
     "cycle": 1,
-    "T": 12.0,
+    "T": 13.0,
     "total_tranches": 40
   },
   "TQQQ": {
     "cycle": 1,
-    "T": 9.0,
+    "T": 10.0,
     "total_tranches": 40
   },
   "last_order_date": "20260821"
