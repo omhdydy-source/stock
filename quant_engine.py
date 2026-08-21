@@ -8,22 +8,36 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATE_FILE = os.path.join(BASE_DIR, "infinite_v4_state.json")
 
 def load_state():
+    state = {
+        "SOXL": {"cycle": 1, "T": 0.0, "total_tranches": 40},
+        "TQQQ": {"cycle": 1, "T": 0.0, "total_tranches": 40}
+    }
     if os.path.exists(STATE_FILE):
         try:
             with open(STATE_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                if "SOXL" not in data or "TQQQ" not in data:
-                    return {
-                        "SOXL": {"cycle": 1, "T": 0.0, "total_tranches": 40},
-                        "TQQQ": {"cycle": 1, "T": 0.0, "total_tranches": 40}
-                    }
-                return data
+                if "SOXL" in data and "TQQQ" in data:
+                    state = data
         except Exception:
             pass
-    return {
-        "SOXL": {"cycle": 1, "T": 0.0, "total_tranches": 40},
-        "TQQQ": {"cycle": 1, "T": 0.0, "total_tranches": 40}
-    }
+
+    # 🔗 엑셀 대시보드(stock_portfolio_log.xlsx) 연동: 엑셀에 기록된 최신 T회차/사이클과 동기화
+    excel_path = os.path.join(BASE_DIR, "stock_portfolio_log.xlsx")
+    if os.path.exists(excel_path):
+        try:
+            df_sum = pd.read_excel(excel_path, sheet_name="자산요약대시보드")
+            if not df_sum.empty:
+                last_row = df_sum.iloc[-1]
+                if "SOXL 사이클" in last_row and "SOXL T회차" in last_row:
+                    state["SOXL"]["cycle"] = int(last_row["SOXL 사이클"])
+                    state["SOXL"]["T"] = float(last_row["SOXL T회차"])
+                if "TQQQ 사이클" in last_row and "TQQQ T회차" in last_row:
+                    state["TQQQ"]["cycle"] = int(last_row["TQQQ 사이클"])
+                    state["TQQQ"]["T"] = float(last_row["TQQQ T회차"])
+        except Exception as e:
+            print(f"⚠️ 엑셀 상태 동기화 중 오류 (기본 JSON 상태 사용): {e}")
+
+    return state
 
 def save_state(state):
     try:
