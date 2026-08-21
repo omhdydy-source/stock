@@ -66,8 +66,8 @@ def execute_v4_trading_pipeline(live_execute=False):
                 "pft": float(h.get("eal_pft_rt", 0))
             }
 
-    curr_soxl = get_current_price("SOXL", 151.0)
-    curr_tqqq = get_current_price("TQQQ", 76.0)
+    curr_soxl = holdings.get("SOXL", {}).get("cur_p") or get_current_price("SOXL", 151.0)
+    curr_tqqq = holdings.get("TQQQ", {}).get("cur_p") or get_current_price("TQQQ", 76.0)
 
     orders_to_place = []
     t_deltas = {}

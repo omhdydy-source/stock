@@ -214,6 +214,9 @@ def analyze_portfolio(account_data, market_data):
         soxl_info = holdings_dict.get("SOXL", {})
         tqqq_info = holdings_dict.get("TQQQ", {})
 
+        curr_soxl = soxl_info.get("cur_p") or curr_soxl
+        curr_tqqq = tqqq_info.get("cur_p") or curr_tqqq
+
         soxl_avg = soxl_info.get("avg_p", curr_soxl)
         soxl_qty = int(soxl_info.get("qty", 0))
         tqqq_avg = tqqq_info.get("avg_p", curr_tqqq)
