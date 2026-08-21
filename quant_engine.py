@@ -21,21 +21,23 @@ def load_state():
         except Exception:
             pass
 
-    # 🔗 엑셀 대시보드(stock_portfolio_log.xlsx) 연동: 엑셀에 기록된 최신 T회차/사이클과 동기화
+    # 🔗 선택적 엑셀 동기화 (파일 및 시트가 존재할 경우에만 조용히 반영)
     excel_path = os.path.join(BASE_DIR, "stock_portfolio_log.xlsx")
     if os.path.exists(excel_path):
         try:
-            df_sum = pd.read_excel(excel_path, sheet_name="자산요약대시보드")
-            if not df_sum.empty:
-                last_row = df_sum.iloc[-1]
-                if "SOXL 사이클" in last_row and "SOXL T회차" in last_row:
-                    state["SOXL"]["cycle"] = int(last_row["SOXL 사이클"])
-                    state["SOXL"]["T"] = float(last_row["SOXL T회차"])
-                if "TQQQ 사이클" in last_row and "TQQQ T회차" in last_row:
-                    state["TQQQ"]["cycle"] = int(last_row["TQQQ 사이클"])
-                    state["TQQQ"]["T"] = float(last_row["TQQQ T회차"])
-        except Exception as e:
-            print(f"⚠️ 엑셀 상태 동기화 중 오류 (기본 JSON 상태 사용): {e}")
+            xl = pd.ExcelFile(excel_path)
+            if "자산요약대시보드" in xl.sheet_names:
+                df_sum = pd.read_excel(excel_path, sheet_name="자산요약대시보드")
+                if not df_sum.empty:
+                    last_row = df_sum.iloc[-1]
+                    if "SOXL 사이클" in last_row and "SOXL T회차" in last_row:
+                        state["SOXL"]["cycle"] = int(last_row["SOXL 사이클"])
+                        state["SOXL"]["T"] = float(last_row["SOXL T회차"])
+                    if "TQQQ 사이클" in last_row and "TQQQ T회차" in last_row:
+                        state["TQQQ"]["cycle"] = int(last_row["TQQQ 사이클"])
+                        state["TQQQ"]["T"] = float(last_row["TQQQ T회차"])
+        except Exception:
+            pass # 깃허브 액션스 등에서 엑셀이 없거나 잠겨있어도 JSON 상태로 안전하게 동작
 
     return state
 
