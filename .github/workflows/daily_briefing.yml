@@ -5,6 +5,9 @@ on:
   repository_dispatch:
     types: [run-stock-bot, workflow_dispatch]
 
+permissions:
+  contents: write
+
 jobs:
   run-bot:
     runs-on: ubuntu-latest
