@@ -21,9 +21,9 @@ def load_state():
         except Exception:
             pass
 
-    # 🔗 선택적 엑셀 동기화 (파일 및 시트가 존재할 경우에만 조용히 반영)
+    # 🔗 엑셀 동기화는 JSON 파일이 없을 때만 초기값으로 참고 (JSON이 최신 상태 유지)
     excel_path = os.path.join(BASE_DIR, "stock_portfolio_log.xlsx")
-    if os.path.exists(excel_path):
+    if not os.path.exists(STATE_FILE) and os.path.exists(excel_path):
         try:
             xl = pd.ExcelFile(excel_path)
             if "자산요약대시보드" in xl.sheet_names:
@@ -37,7 +37,7 @@ def load_state():
                         state["TQQQ"]["cycle"] = int(last_row["TQQQ 사이클"])
                         state["TQQQ"]["T"] = float(last_row["TQQQ T회차"])
         except Exception:
-            pass # 깃허브 액션스 등에서 엑셀이 없거나 잠겨있어도 JSON 상태로 안전하게 동작
+            pass
 
     return state
 
@@ -88,6 +88,33 @@ def calculate_v4_params(ticker, avg_price, T, cash, total_tranches=40):
         "daily_budget": daily_budget,
         "take_profit_pct": take_profit_pct,
         "take_profit_price": take_profit_price
+    }
+
+def calculate_v4_reverse_params(ticker, avg_price, T, cash, holdings_qty, historical_closes=None):
+    # 1. 리버스모드 별지점: 직전 5거래일 종가의 이동평균선 (5일 SMA)
+    sma_5 = avg_price
+    if historical_closes and len(historical_closes) >= 5:
+        sma_5 = sum(historical_closes[-5:]) / 5.0
+        
+    star_point = sma_5
+    buy_point = star_point - 0.01 if star_point > 0.01 else star_point
+    
+    # 2. 매도 수량: 20분할 기준 전체 보유 수량의 1/20 (5%)
+    sell_qty = int(holdings_qty / 20) if holdings_qty >= 20 else (1 if holdings_qty > 0 else 0)
+    
+    # 3. 쿼터 매수 예산: (잔금 + 예상 매도 대금) / 4
+    estimated_sale_proceeds = sell_qty * star_point
+    quarter_buy_budget = (cash + estimated_sale_proceeds) / 4.0
+    
+    # 4. 리버스모드 종료 조건 (TQQQ -15%, SOXL -20% 회복 시 일반모드 복귀)
+    exit_threshold_pct = -15.0 if ticker == "TQQQ" else -20.0
+    
+    return {
+        "star_point": star_point,
+        "buy_point": buy_point,
+        "sell_qty": sell_qty,
+        "quarter_buy_budget": quarter_buy_budget,
+        "exit_threshold_pct": exit_threshold_pct
     }
 
 def analyze_portfolio(account_data, market_data):
