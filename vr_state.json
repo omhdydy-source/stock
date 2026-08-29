@@ -1,0 +1,13 @@
+{
+  "ticker": "PORTFOLIO_TOTAL",
+  "cycle": 1,
+  "V": 18423.45,
+  "Pool": 1911.15,
+  "G": 10.0,
+  "mode": "lump_sum",
+  "deposit_amount": 0.0,
+  "start_date": "2026-08-29",
+  "last_cycle_date": "2026-08-29",
+  "last_update_year": 2026,
+  "history": []
+}
