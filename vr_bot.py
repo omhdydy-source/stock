@@ -15,9 +15,22 @@ EXCEL_LOG_PATH = os.path.join(BASE_DIR, "vr_portfolio_log.xlsx")
 
 def update_excel_log(rep):
     target_path = EXCEL_LOG_PATH
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "루나시트 VR일지"
+    if os.path.exists(target_path):
+        try:
+            wb = openpyxl.load_workbook(target_path)
+            if "루나시트 VR일지" in wb.sheetnames:
+                ws = wb["루나시트 VR일지"]
+            else:
+                ws = wb.active
+                ws.title = "루나시트 VR일지"
+        except Exception:
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "루나시트 VR일지"
+    else:
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "루나시트 VR일지"
 
     navy_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
     light_blue_fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
@@ -99,7 +112,14 @@ def update_excel_log(rep):
         round(rep["trade_amount"], 2)
     ]
 
+    # Find the next available row or update today's existing row
     data_row_idx = start_row + 1
+    while ws.cell(row=data_row_idx, column=1).value is not None and data_row_idx < 1000:
+        existing_date = ws.cell(row=data_row_idx, column=2).value
+        if existing_date == today_str:
+            break
+        data_row_idx += 1
+
     for col_idx, val in enumerate(row_data, 1):
         cell = ws.cell(row=data_row_idx, column=col_idx, value=val)
         cell.border = border
@@ -194,7 +214,7 @@ def update_excel_log(rep):
 
     try:
         wb.save(target_path)
-        print(f"📁 구글시트 루나시트 오피셜 템플릿 양식 엑셀 재생성 완료: {target_path}")
+        print(f"📁 구글시트 루나시트 오피셜 템플릿 양식 엑셀 누적 저장 완료: {target_path}")
     except PermissionError:
         alt_path = os.path.join(BASE_DIR, f"vr_portfolio_log_{datetime.now().strftime('%H%M%S')}.xlsx")
         wb.save(alt_path)
@@ -203,7 +223,7 @@ def update_excel_log(rep):
 def run_vr_bot():
     rep = calculate_vr_cycle()
     update_excel_log(rep)
-    print("✅ 루나시트 양식 엑셀 파일 생성 완료!")
+    print("✅ 루나시트 양식 엑셀 파일 누적 업데이트 완료!")
 
 if __name__ == "__main__":
     run_vr_bot()
