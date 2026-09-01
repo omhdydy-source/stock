@@ -46,6 +46,7 @@ def send_live_order(operation_id, payload_input):
 
     url = f"{NHPLUG_BASE_URL}{path}"
     full_payload = {"Input_0": payload_input}
+    print(f"📤 전송 파이살(Payload): {json.dumps(full_payload, indent=2, ensure_ascii=False)}")
     req_data = json.dumps(full_payload).encode("utf-8")
     
     req = urllib.request.Request(url, data=req_data, headers={
@@ -124,11 +125,15 @@ def execute_vr_orders(live_execute=False):
 
     if live_execute and orders_to_place:
         print(f"🚀 실계좌로 2주 유효기간 60건 예약 주문 전송 중...")
+        success_count = 0
         for op_id, inp in orders_to_place:
             res = send_live_order(op_id, inp)
             print(f"📥 주문 결과 응답: {json.dumps(res, indent=2, ensure_ascii=False)}")
+            if res and res.get("rsp_cd") == "00162":
+                success_count += 1
             time.sleep(0.3)
-        print(f"✅ 모든 VR 30분할 2주 예약 주문 전송 완료!")
+        print(f"✅ 모든 VR 30분할 2주 예약 주문 전송 완료! (성공: {success_count}/{len(orders_to_place)})")
+        send_telegram_message(f"🚀 [VR 5.0 자동매매] TQQQ 30분할 2주 예약 주문 60건 전송 완료 (성공: {success_count}/{len(orders_to_place)})")
     else:
         print(f"💡 (드라이프런 모드 - 실제 실계좌로 전송하려면 `--execute` 플래그를 붙이세요)")
 
