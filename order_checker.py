@@ -8,7 +8,7 @@ from config import NHPLUG_APP_KEY, NHPLUG_APP_SECRET, NHPLUG_BASE_URL, ACCOUNT_N
 
 def check_existing_reserved_orders():
     """
-    NH투자증권 API를 통해 현재 계좌에 살아있는 해외주식 예약 주문이 있는지 조회합니다.
+    NH투자증권 API를 통해 현재 계좌에 살아있는(접수 상태인) 해외주식 예약 주문이 있는지 조회합니다.
     주문이 1개라도 남아있으면 True, 비어있으면 False를 반환합니다.
     """
     token = get_access_token()
@@ -24,7 +24,7 @@ def check_existing_reserved_orders():
             "bkg_orr_dt": today_str,
             "act_no": ACCOUNT_NO,
             "sby_dit_cd": "0", # 전체
-            "bkg_orr_can_yn": "0", # 전체
+            "bkg_orr_can_yn": "1", # 1.접수 (취소된 주문 제외, 활성 주문만 카운트)
             "oss_orr_knd_cd": "0",
             "bkg_orr_tp_cd": "0",
             "wtm_cur_knd_cd": "0"
@@ -44,10 +44,10 @@ def check_existing_reserved_orders():
             res_data = json.loads(resp.read().decode("utf-8"))
             items = res_data.get("Output_1") or res_data.get("Output_0") or []
             if isinstance(items, list) and len(items) > 0:
-                print(f"🔍 [계좌 검사] 현재 계좌에 예약 주문이 {len(items)}건 존재합니다.")
+                print(f"🔍 [계좌 검사] 현재 계좌에 활성 예약 주문이 {len(items)}건 존재합니다.")
                 return True
             else:
-                print("🔍 [계좌 검사] 현재 계좌에 남아있는 예약 주문이 없습니다. (그물망 비어있음)")
+                print("🔍 [계좌 검사] 현재 계좌에 남아있는 활성 예약 주문이 없습니다. (그물망 비어있음)")
                 return False
     except Exception as e:
         print(f"⚠️ 예약 주문 조회 중 오류 발생 (무시하고 진행): {e}")
