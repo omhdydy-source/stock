@@ -90,7 +90,7 @@ def calculate_vr_cycle(deposit=None, withdrawal=0.0):
     # API 조회 실패 시 폴백 스냅샷
     if total_stock_eval == 0.0 and cash_usd == 0.0:
         total_stock_eval = 18423.45
-        cash_usd = 1911.15
+        cash_usd = 5000.0
         holdings_summary = [
             {"code": "TQQQ", "qty": 200.0, "eval_amt": 14336.0, "avg_p": 70.87, "cur_p": 71.68},
             {"code": "USD", "qty": 40.0, "eval_amt": 3342.0, "avg_p": 83.56, "cur_p": 83.55},
