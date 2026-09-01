@@ -107,13 +107,12 @@ def update_excel_log(rep):
         existing_rows_count += 1
         data_row_idx += 1
 
-    if not found_today:
-        cycle_num = existing_rows_count + 1
-    else:
-        cycle_num = ws.cell(row=data_row_idx, column=1).value or (existing_rows_count + 1)
+    cycle_num = rep.get("cycle", 1)
+    day_count = rep.get("day_count", 1)
+    cycle_str = f"{cycle_num}회차 ({day_count}/14일)"
 
     row_data = [
-        cycle_num,
+        cycle_str,
         today_str,
         round(rep["tqqq_avg_p"], 2),
         round(rep["tqqq_qty"], 2),
