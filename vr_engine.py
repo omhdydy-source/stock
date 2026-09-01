@@ -147,12 +147,15 @@ def calculate_vr_cycle(deposit=None, withdrawal=0.0):
     today_dt = datetime.now()
     last_cycle_dt = datetime.strptime(state.get("last_cycle_date", today_dt.strftime("%Y-%m-%d")), "%Y-%m-%d")
     days_passed = (today_dt - last_cycle_dt).days
+    day_count = min(14, max(1, days_passed + 1))
     
     cycle_updated = False
     if days_passed >= 14:
         state["V"] = next_V
         state["cycle"] += 1
         state["last_cycle_date"] = today_dt.strftime("%Y-%m-%d")
+        days_passed = 0
+        day_count = 1
         cycle_updated = True
         save_vr_state(state)
 
@@ -237,6 +240,8 @@ def calculate_vr_cycle(deposit=None, withdrawal=0.0):
         "daily_trade_amount": trade_amount / num_tiers,
         "buy_tier_orders": buy_tier_orders,
         "sell_tier_orders": sell_tier_orders,
+        "cycle": state["cycle"],
+        "day_count": day_count,
         "days_passed": days_passed,
         "cycle_updated": cycle_updated,
         "reason": reason

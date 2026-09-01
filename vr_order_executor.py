@@ -31,9 +31,13 @@ def format_rich_telegram_report(rep, success_count, total_count):
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
     mode_str = "거치식 (Lump-Sum)" if rep.get("mode") == "lump_sum" else "적립식"
     
+    cycle_num = rep.get("cycle", 1)
+    day_count = rep.get("day_count", 1)
+    
     msg = f"📊 *[실계좌 VR 5.0 2주 주기 운용 리포트]*\n"
     msg += f"📅 일시: {now_str}\n"
     msg += f"⚙️ 운용 방식: {mode_str}\n"
+    msg += f"🔄 운용 회차: 제 {cycle_num}회차 ({day_count}/14일차)\n"
     msg += f"──────────────────\n\n"
     msg += f"· TQQQ 보유 평단: `${rep['tqqq_avg_p']:,.2f}`\n"
     msg += f"· TQQQ 보유 개수: `{rep['tqqq_qty']:,.0f}주`\n"
