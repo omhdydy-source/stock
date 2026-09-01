@@ -87,16 +87,16 @@ def calculate_vr_cycle(deposit=None, withdrawal=0.0):
                 "cur_p": cur_p
             })
 
-    # API 조회 실패 시 폴백 스냅샷
+    # API 조회 실패 시 상태 파일(state["Pool"]) 변수를 폴백으로 사용
     if total_stock_eval == 0.0 and cash_usd == 0.0:
-        total_stock_eval = 18423.45
-        cash_usd = 5000.0
+        total_stock_eval = float(state.get("V", 18423.45))
+        cash_usd = float(state.get("Pool", 5000.0))
         holdings_summary = [
-            {"code": "TQQQ", "qty": 200.0, "eval_amt": 14336.0, "avg_p": 70.87, "cur_p": 71.68},
-            {"code": "USD", "qty": 40.0, "eval_amt": 3342.0, "avg_p": 83.56, "cur_p": 83.55},
-            {"code": "QLD", "qty": 8.0, "eval_amt": 721.2, "avg_p": 90.23, "cur_p": 90.15},
-            {"code": "IQQ", "qty": 1.0, "eval_amt": 24.25, "avg_p": 24.74, "cur_p": 24.25}
+            {"code": "TQQQ", "qty": 200.0, "eval_amt": total_stock_eval * 0.7, "avg_p": 70.87, "cur_p": 71.68}
         ]
+    elif cash_usd > 0.0:
+        state["Pool"] = cash_usd
+        save_vr_state(state)
 
     # TQQQ 평단 및 개수 추출
     tqqq_qty = 0.0
