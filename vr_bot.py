@@ -93,8 +93,27 @@ def update_excel_log(rep):
     ws.row_dimensions[start_row].height = 28
 
     today_str = datetime.now().strftime("%Y-%m-%d")
+
+    # Find existing rows and determine sequential cycle number (1회차, 2회차, 3회차...)
+    data_row_idx = start_row + 1
+    existing_rows_count = 0
+    found_today = False
+
+    while ws.cell(row=data_row_idx, column=1).value is not None and data_row_idx < 1000:
+        existing_date = ws.cell(row=data_row_idx, column=2).value
+        if existing_date == today_str:
+            found_today = True
+            break
+        existing_rows_count += 1
+        data_row_idx += 1
+
+    if not found_today:
+        cycle_num = existing_rows_count + 1
+    else:
+        cycle_num = ws.cell(row=data_row_idx, column=1).value or (existing_rows_count + 1)
+
     row_data = [
-        rep.get("cycle", 1),
+        cycle_num,
         today_str,
         round(rep["tqqq_avg_p"], 2),
         round(rep["tqqq_qty"], 2),
@@ -111,14 +130,6 @@ def update_excel_log(rep):
         rep["action"],
         round(rep["trade_amount"], 2)
     ]
-
-    # Find the next available row or update today's existing row
-    data_row_idx = start_row + 1
-    while ws.cell(row=data_row_idx, column=1).value is not None and data_row_idx < 1000:
-        existing_date = ws.cell(row=data_row_idx, column=2).value
-        if existing_date == today_str:
-            break
-        data_row_idx += 1
 
     for col_idx, val in enumerate(row_data, 1):
         cell = ws.cell(row=data_row_idx, column=col_idx, value=val)
