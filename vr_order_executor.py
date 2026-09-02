@@ -127,7 +127,7 @@ def execute_vr_orders(live_execute=False):
             "orr_qty": t["shares"],
             "fc_orr_uit_pr": t["price"],
             "nmn_pr_tp_cd": "12",
-            "bkg_orr_tp_cd": "1",
+            "bkg_orr_tp_cd": "2",
             "bkg_orr_sta_dt": today_str,
             "bkg_orr_end_dt": end_str,
             "wtm_cur_knd_cd": "1"
@@ -143,7 +143,7 @@ def execute_vr_orders(live_execute=False):
             "orr_qty": t["shares"],
             "fc_orr_uit_pr": t["price"],
             "nmn_pr_tp_cd": "01",
-            "bkg_orr_tp_cd": "1",
+            "bkg_orr_tp_cd": "2",
             "bkg_orr_sta_dt": today_str,
             "bkg_orr_end_dt": end_str,
             "wtm_cur_knd_cd": "1"

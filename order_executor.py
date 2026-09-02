@@ -97,7 +97,7 @@ def execute_v4_trading_pipeline(live_execute=False):
                         "orr_qty": sell_qty,
                         "fc_orr_uit_pr": 0,
                         "nmn_pr_tp_cd": "01", # 시장가 / MOC
-                        "bkg_orr_tp_cd": "1",
+                        "bkg_orr_tp_cd": "2",
                         "bkg_orr_sta_dt": today_str,
                         "wtm_cur_knd_cd": "1"
                     }
@@ -124,7 +124,7 @@ def execute_v4_trading_pipeline(live_execute=False):
                             "orr_qty": quarter_qty,
                             "fc_orr_uit_pr": round(star_price, 2),
                             "nmn_pr_tp_cd": "12",
-                            "bkg_orr_tp_cd": "1",
+                            "bkg_orr_tp_cd": "2",
                             "bkg_orr_sta_dt": today_str,
                             "wtm_cur_knd_cd": "1"
                         }
@@ -140,7 +140,7 @@ def execute_v4_trading_pipeline(live_execute=False):
                             "orr_qty": main_qty,
                             "fc_orr_uit_pr": round(target_price, 2),
                             "nmn_pr_tp_cd": "00",
-                            "bkg_orr_tp_cd": "1",
+                            "bkg_orr_tp_cd": "2",
                             "bkg_orr_sta_dt": today_str,
                             "wtm_cur_knd_cd": "1"
                         }
@@ -172,7 +172,7 @@ def execute_v4_trading_pipeline(live_execute=False):
                 "orr_qty": shares,
                 "fc_orr_uit_pr": round(buy_price, 2),
                 "nmn_pr_tp_cd": "12",
-                "bkg_orr_tp_cd": "1",
+                "bkg_orr_tp_cd": "2",
                 "bkg_orr_sta_dt": today_str,
                 "wtm_cur_knd_cd": "1"
             }
@@ -202,7 +202,7 @@ def execute_v4_trading_pipeline(live_execute=False):
                 "orr_qty": shares,
                 "fc_orr_uit_pr": round(buy_price, 2),
                 "nmn_pr_tp_cd": "12",
-                "bkg_orr_tp_cd": "1",
+                "bkg_orr_tp_cd": "2",
                 "bkg_orr_sta_dt": today_str,
                 "wtm_cur_knd_cd": "1"
             }
