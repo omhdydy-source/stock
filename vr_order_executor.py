@@ -98,7 +98,14 @@ def send_live_order(operation_id, payload_input):
         return {"error": str(e)}
 
 def execute_vr_orders(live_execute=False):
-    print("🚀 [실계좌 VR 5.0 그물망 실행기 가동]")
+    print("🚀 [실계좌 VR 5.0 스마트 그물망 검사기 가동]")
+    
+    has_orders = check_existing_reserved_orders()
+    if has_orders:
+        print("🛡️ [안전 가드] 계좌에 이미 활성화된 예약 주문 그물망이 존재하므로 중복 실행을 방지하기 위해 패스합니다.")
+        return []
+
+    print("✨ [그물망 비어있음 감지] 새로운 2주 주기 30분할 예약 주문 세팅을 시작합니다!")
 
     rep = calculate_vr_cycle()
     
