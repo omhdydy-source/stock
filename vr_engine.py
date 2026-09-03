@@ -203,18 +203,15 @@ def calculate_vr_cycle(deposit=None, withdrawal=0.0):
             "cost": round(tier_price * tier_shares, 2)
         })
 
-    # 매도 30단계 가이드 (최소 평단가 대비 +2% 이상 수익권에서만 매도하도록 보정)
+    # 매도 30단계 가이드 (기하급수(지수) 상승 그물망 적용, 상단 최대 밴드 가격까지 지수적으로 확대)
     sell_tier_orders = []
     shares_per_tier = max(1, int(tqqq_qty / num_tiers)) if tqqq_qty > 0 else 6
     
     min_sell_price = max(ref_price * 1.01, tqqq_avg_p * 1.02) if tqqq_avg_p > 0 else ref_price * 1.02
-    raw_v_max_share_price = (v_max / (total_stock_eval / ref_price)) if total_stock_eval > 0 else ref_price * 1.25
-    v_max_share_price = max(raw_v_max_share_price, min_sell_price * 1.2)
-    
-    price_step_up = max(0.05, (v_max_share_price - min_sell_price) / num_tiers)
+    v_max_share_price = max(min_sell_price * 2.5, ref_price * 8.0)
 
     for i in range(1, num_tiers + 1):
-        tier_price = min_sell_price + (price_step_up * i)
+        tier_price = min_sell_price * ((v_max_share_price / min_sell_price) ** (i / num_tiers))
         sell_tier_orders.append({
             "tier": i,
             "price": round(tier_price, 2),
