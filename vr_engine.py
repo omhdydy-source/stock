@@ -26,11 +26,13 @@ def load_vr_state():
     default_state = {
         "ticker": "PORTFOLIO_TOTAL",
         "cycle": 1,
-        "V": 0.0,
-        "Pool": 0.0,
+        "V": 4058.27,
+        "Pool": 3112.10,
         "G": 10.0,
-        "mode": "lump_sum",
-        "deposit_amount": 0.0,
+        "mode": "deposit",
+        "deposit_amount": 300.0,
+        "band_width": 0.15,
+        "pool_usage_limit": 0.75,
         "start_date": datetime.now().strftime("%Y-%m-%d"),
         "last_cycle_date": datetime.now().strftime("%Y-%m-%d"),
         "last_update_year": datetime.now().year,
@@ -140,9 +142,12 @@ def calculate_vr_cycle(deposit=None, withdrawal=0.0):
     add_rate = 0.005 if total_stock_eval > V else 0.0
     total_rate = basic_rate + add_rate
     
+    band_width = state.get("band_width", 0.15)
+    pool_usage_limit = state.get("pool_usage_limit", 0.75)
+    
     next_V = V * (1.0 + total_rate) + deposit - withdrawal
-    v_min = next_V * 0.80
-    v_max = next_V * 1.25
+    v_min = next_V * (1.0 - band_width)
+    v_max = next_V * (1.0 + band_width)
     
     today_dt = datetime.now()
     last_cycle_dt = datetime.strptime(state.get("last_cycle_date", today_dt.strftime("%Y-%m-%d")), "%Y-%m-%d")
@@ -179,10 +184,11 @@ def calculate_vr_cycle(deposit=None, withdrawal=0.0):
         trade_amount = buy_deficit if buy_deficit > 0 else sell_excess
         reason = f"안전 밴드 내 홀드 중 (하단 터치 시 매수 필요액: ${buy_deficit:,.2f} / 상단 터치 시 매도 초과액: ${sell_excess:,.2f})"
 
-    # 매수 30단계 가이드
+    # 매수 30단계 가이드 (Pool 사용 한도 75% 적용)
     buy_tier_orders = []
-    budget_per_tier = Pool / num_tiers if Pool > 0 else 63.0
-    v_min_share_price = max(1.0, (v_min / (total_stock_eval / ref_price))) if total_stock_eval > 0 else ref_price * 0.80
+    usable_pool = Pool * pool_usage_limit
+    budget_per_tier = usable_pool / num_tiers if usable_pool > 0 else 63.0
+    v_min_share_price = max(1.0, (v_min / (total_stock_eval / ref_price))) if total_stock_eval > 0 else ref_price * (1.0 - band_width)
     price_step_down = max(0.05, (ref_price - v_min_share_price) / num_tiers)
 
     for i in range(1, num_tiers + 1):
