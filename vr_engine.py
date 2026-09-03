@@ -89,14 +89,14 @@ def calculate_vr_cycle(deposit=None, withdrawal=0.0):
                 "cur_p": cur_p
             })
 
-    # API 조회 실패 시 상태 파일(state)에 저장된 사용자 실제 보유 내역(213주, 평단 $70.76) 및 Pool 폴백 사용
+    # API 조회 실패 시 상태 파일(state)에 동적으로 저장된 변수값 사용
     if not holdings_summary or cash_usd == 0.0:
-        saved_qty = float(state.get("tqqq_qty", 213.0))
-        saved_avg_p = float(state.get("tqqq_avg_p", 70.76))
+        saved_qty = float(state.get("tqqq_qty", 0.0))
+        saved_avg_p = float(state.get("tqqq_avg_p", 0.0))
         ref_p = get_current_price("TQQQ", 71.68)
         total_stock_eval = saved_qty * ref_p
         if cash_usd <= 0.0:
-            cash_usd = float(state.get("Pool", 3112.10))
+            cash_usd = float(state.get("Pool", 0.0))
         holdings_summary = [
             {"code": "TQQQ", "qty": saved_qty, "eval_amt": total_stock_eval, "avg_p": saved_avg_p, "cur_p": ref_p}
         ]
