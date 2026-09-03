@@ -184,12 +184,13 @@ def calculate_vr_cycle(deposit=None, withdrawal=0.0):
         trade_amount = buy_deficit if buy_deficit > 0 else sell_excess
         reason = f"안전 밴드 내 홀드 중 (하단 터치 시 매수 필요액: ${buy_deficit:,.2f} / 상단 터치 시 매도 초과액: ${sell_excess:,.2f})"
 
-    # 매수 30단계 가이드 (Pool 사용 한도 75% 적용)
+    # 매수 30단계 가이드 (현재가 기준 하단 밴드까지 자연스럽게 펼쳐지는 사다리형 그물망)
     buy_tier_orders = []
     usable_pool = Pool * pool_usage_limit
     budget_per_tier = usable_pool / num_tiers if usable_pool > 0 else 63.0
-    v_min_share_price = max(1.0, (v_min / (total_stock_eval / ref_price))) if total_stock_eval > 0 else ref_price * (1.0 - band_width)
-    price_step_down = max(0.05, (ref_price - v_min_share_price) / num_tiers)
+    
+    lower_target_price = ref_price * 0.55
+    price_step_down = (ref_price - lower_target_price) / num_tiers
 
     for i in range(1, num_tiers + 1):
         tier_price = ref_price - (price_step_down * i)
@@ -203,12 +204,12 @@ def calculate_vr_cycle(deposit=None, withdrawal=0.0):
             "cost": round(tier_price * tier_shares, 2)
         })
 
-    # 매도 30단계 가이드 (기하급수(지수) 상승 그물망 적용, 상단 최대 밴드 가격까지 지수적으로 확대)
+    # 매도 30단계 가이드 (2% 강제 제한 없이 현재가 기준 지수 상승 그물망 적용)
     sell_tier_orders = []
     shares_per_tier = max(1, int(tqqq_qty / num_tiers)) if tqqq_qty > 0 else 6
     
-    min_sell_price = max(ref_price * 1.01, tqqq_avg_p * 1.02) if tqqq_avg_p > 0 else ref_price * 1.02
-    v_max_share_price = max(min_sell_price * 2.5, ref_price * 8.0)
+    min_sell_price = ref_price * 1.01
+    v_max_share_price = min_sell_price * 3.5
 
     for i in range(1, num_tiers + 1):
         tier_price = min_sell_price * ((v_max_share_price / min_sell_price) ** (i / num_tiers))
