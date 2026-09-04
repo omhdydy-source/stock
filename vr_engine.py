@@ -134,6 +134,22 @@ def calculate_vr_cycle(deposit=None, withdrawal=0.0):
     V = state["V"]
     Pool = cash_usd
     
+    # 200일 이동평균선(SMA 200) 기반 동적 추세 필터 및 현금 비중 조절 (하락장 시 풀 100% 개방 및 G 조정)
+    sma_200 = ref_price
+    try:
+        tk = yf.Ticker("TQQQ")
+        hist = tk.history(period="250d")
+        if not hist.empty and "Close" in hist.columns:
+            closes = hist["Close"].dropna()
+            if len(closes) >= 200:
+                sma_200 = float(closes.rolling(window=200).mean().iloc[-1])
+    except Exception:
+        pass
+
+    is_bull = ref_price >= sma_200
+    pool_usage_limit = 1.0 if not is_bull else state.get("pool_usage_limit", 0.75)
+    effective_G = 8.0 if not is_bull else G
+
     mode = state.get("mode", "lump_sum")
     if mode == "lump_sum":
         deposit = 0.0
@@ -142,12 +158,11 @@ def calculate_vr_cycle(deposit=None, withdrawal=0.0):
             deposit = state.get("deposit_amount", 0.0)
             
     pool_ratio = (Pool / V) if V > 0 else 0.0
-    basic_rate = pool_ratio / G
+    basic_rate = pool_ratio / effective_G
     add_rate = 0.005 if total_stock_eval > V else 0.0
     total_rate = basic_rate + add_rate
     
     band_width = state.get("band_width", 0.15)
-    pool_usage_limit = state.get("pool_usage_limit", 0.75)
     
     next_V = V * (1.0 + total_rate) + deposit - withdrawal
     v_min = next_V * (1.0 - band_width)
