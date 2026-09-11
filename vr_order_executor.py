@@ -100,14 +100,21 @@ def send_live_order(operation_id, payload_input):
 def execute_vr_orders(live_execute=False):
     print("🚀 [실계좌 VR 5.0 스마트 그물망 검사기 가동]")
     
+    # 1단계: 2주 주기 로컬 타이머 락 검사 (최우선 방어)
+    rep = calculate_vr_cycle()
+    days_passed = rep.get("days_passed", 0)
+    if days_passed < 14:
+        print(f"🛡️ [2주 주기 락 메커니즘] 마지막 리밸런싱/주문일로부터 아직 14일이 경과하지 않았습니다. (현재 {days_passed}/14일 경과)")
+        print("💡 중복 예약 주문 방지를 위해 이번 실행은 안전하게 차단(스킵)합니다.")
+        return []
+
+    # 2단계: 증권사 계좌 실제 예약 주문 존재 여부 검사
     has_orders = check_existing_reserved_orders()
     if has_orders:
         print("🛡️ [안전 가드] 계좌에 이미 활성화된 예약 주문 그물망이 존재하므로 중복 실행을 방지하기 위해 패스합니다.")
         return []
 
-    print("✨ [그물망 비어있음 감지] 새로운 2주 주기 30분할 예약 주문 세팅을 시작합니다!")
-
-    rep = calculate_vr_cycle()
+    print("✨ [2주 경과 및 그물망 비어있음 감지] 새로운 2주 주기 30분할 예약 주문 세팅을 시작합니다!")
     
     update_excel_log(rep)
     
