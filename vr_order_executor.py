@@ -124,7 +124,7 @@ def execute_vr_orders(live_execute=False, force=False):
     update_excel_log(rep)
     
     today_dt = datetime.now()
-    end_dt = today_dt + timedelta(days=14)
+    end_dt = today_dt + timedelta(days=13)
     today_str = today_dt.strftime("%Y%m%d")
     end_str = end_dt.strftime("%Y%m%d")
     
