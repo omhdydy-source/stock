@@ -203,10 +203,12 @@ def calculate_vr_cycle(deposit=None, withdrawal=0.0):
         trade_amount = buy_deficit if buy_deficit > 0 else sell_excess
         reason = f"안전 밴드 내 홀드 중 (하단 터치 시 매수 필요액: ${buy_deficit:,.2f} / 상단 터치 시 매도 초과액: ${sell_excess:,.2f})"
 
-    # 매수 30단계 가이드 (현재가 기준 하단 밴드까지 자연스럽게 펼쳐지는 사다리형 그물망)
+    # 매수 30단계 가이드 (균일한 수량 배분 로직 적용)
     buy_tier_orders = []
     usable_pool = Pool * pool_usage_limit
-    budget_per_tier = usable_pool / num_tiers if usable_pool > 0 else 63.0
+    
+    total_planned_shares = int(usable_pool / ref_price) if ref_price > 0 else 30
+    buy_shares_per_tier = max(1, int(total_planned_shares / num_tiers)) if num_tiers > 0 else 1
     
     lower_target_price = ref_price * 0.55
     price_step_down = (ref_price - lower_target_price) / num_tiers
@@ -214,8 +216,7 @@ def calculate_vr_cycle(deposit=None, withdrawal=0.0):
     for i in range(1, num_tiers + 1):
         tier_price = ref_price - (price_step_down * i)
         if tier_price < 1.0: tier_price = 1.0
-        tier_shares = int(budget_per_tier / tier_price) if tier_price > 0 else 1
-        if tier_shares < 1: tier_shares = 1
+        tier_shares = buy_shares_per_tier
         buy_tier_orders.append({
             "tier": i,
             "price": round(tier_price, 2),
