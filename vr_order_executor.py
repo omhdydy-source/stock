@@ -97,24 +97,29 @@ def send_live_order(operation_id, payload_input):
         print(f"❌ 주문 API 전송 오류 ({operation_id}): {e}")
         return {"error": str(e)}
 
-def execute_vr_orders(live_execute=False):
+def execute_vr_orders(live_execute=False, force=False):
     print("🚀 [실계좌 VR 5.0 스마트 그물망 검사기 가동]")
     
-    # 1단계: 2주 주기 로컬 타이머 락 검사 (최우선 방어)
-    rep = calculate_vr_cycle()
-    days_passed = rep.get("days_passed", 0)
-    if days_passed < 14:
-        print(f"🛡️ [2주 주기 락 메커니즘] 마지막 리밸런싱/주문일로부터 아직 14일이 경과하지 않았습니다. (현재 {days_passed}/14일 경과)")
-        print("💡 중복 예약 주문 방지를 위해 이번 실행은 안전하게 차단(스킵)합니다.")
-        return []
-
-    # 2단계: 증권사 계좌 실제 예약 주문 존재 여부 검사
-    has_orders = check_existing_reserved_orders()
-    if has_orders:
+    # 1단계: 계좌 실제 예약 주문 존재 여부 검사 (API 성공 시 14일 락 우회 가능)
+    has_orders, api_success = check_existing_reserved_orders()
+    
+    if api_success and has_orders and not force:
         print("🛡️ [안전 가드] 계좌에 이미 활성화된 예약 주문 그물망이 존재하므로 중복 실행을 방지하기 위해 패스합니다.")
         return []
+    
+    if api_success and not has_orders:
+        print("✨ [계좌 확인] 계좌에 활성 예약 주문이 0건입니다. 14일 락을 우회하여 즉시 새로운 그물망 세팅을 진행합니다!")
+    else:
+        # API 조회 실패 시(오프라인/토큰 오류) 로컬 타이머 락 검사 수행
+        rep = calculate_vr_cycle()
+        days_passed = rep.get("days_passed", 0)
+        if days_passed < 14 and not force:
+            print(f"🛡️ [2주 주기 락 메커니즘] 마지막 리밸런싱/주문일로부터 아직 14일이 경과하지 않았습니다. (현재 {days_passed}/14일 경과)")
+            print("💡 중복 예약 주문 방지를 위해 이번 실행은 안전하게 차단(С킵)합니다. (--force 인자로 강제 실행 가능)")
+            return []
 
-    print("✨ [2주 경과 및 그물망 비어있음 감지] 새로운 2주 주기 30분할 예약 주문 세팅을 시작합니다!")
+    rep = calculate_vr_cycle()
+    print("✨ 새로운 2주 주기 30분할 예약 주문 세팅을 시작합니다!")
     
     update_excel_log(rep)
     
@@ -180,4 +185,5 @@ def execute_vr_orders(live_execute=False):
 if __name__ == "__main__":
     import sys
     live = "--execute" in sys.argv
-    execute_vr_orders(live_execute=live)
+    force = "--force" in sys.argv
+    execute_vr_orders(live_execute=live, force=force)

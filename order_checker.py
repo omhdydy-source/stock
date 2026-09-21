@@ -9,12 +9,14 @@ from config import NHPLUG_APP_KEY, NHPLUG_APP_SECRET, NHPLUG_BASE_URL, ACCOUNT_N
 def check_existing_reserved_orders():
     """
     NH투자증권 API를 통해 현재 계좌에 살아있는(접수 상태인) 해외주식 예약 주문이 있는지 조회합니다.
-    주문이 1개라도 남아있으면 True, 비어있으면 False를 반환합니다.
+    반환값: (has_orders: bool, api_success: bool)
+    - has_orders: 주문이 1개라도 남아있으면 True, 비어있으면 False
+    - api_success: API 조회에 성공했으면 True, 토큰 실패나 예외 발생 시 False
     """
     token = get_access_token()
     if not token:
         print("⚠️ 인증 토큰 발급 실패로 예약 주문 조회를 건너뜁니다.")
-        return False
+        return False, False
 
     url = f"{NHPLUG_BASE_URL}/gbstock/inquiry/v1/reservedInquiry"
     today_str = datetime.now().strftime("%Y%m%d")
@@ -45,10 +47,10 @@ def check_existing_reserved_orders():
             items = res_data.get("Output_1") or res_data.get("Output_0") or []
             if isinstance(items, list) and len(items) > 0:
                 print(f"🔍 [계좌 검사] 현재 계좌에 활성 예약 주문이 {len(items)}건 존재합니다.")
-                return True
+                return True, True
             else:
                 print("🔍 [계좌 검사] 현재 계좌에 남아있는 활성 예약 주문이 없습니다. (그물망 비어있음)")
-                return False
+                return False, True
     except Exception as e:
-        print(f"⚠️ 예약 주문 조회 중 오류 발생 (무시하고 진행): {e}")
-        return False
+        print(f"⚠️ 예약 주문 조회 중 오류 발생: {e}")
+        return False, False
