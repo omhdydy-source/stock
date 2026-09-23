@@ -210,7 +210,7 @@ def calculate_vr_cycle(deposit=None, withdrawal=0.0):
     total_planned_shares = int(usable_pool / ref_price) if ref_price > 0 else 30
     buy_shares_per_tier = max(1, int(total_planned_shares / num_tiers)) if num_tiers > 0 else 1
     
-    lower_target_price = ref_price * 0.55
+    lower_target_price = ref_price * 0.75  # 1사이클 내 현실적 최대 하락 하한선 (-25%)으로 30단계 촘촘하게 재조정
     price_step_down = (ref_price - lower_target_price) / num_tiers
 
     for i in range(1, num_tiers + 1):
@@ -229,7 +229,7 @@ def calculate_vr_cycle(deposit=None, withdrawal=0.0):
     shares_per_tier = max(1, int(tqqq_qty / num_tiers)) if tqqq_qty > 0 else 6
     
     min_sell_price = ref_price * 1.01
-    v_max_share_price = min_sell_price * 3.5
+    v_max_share_price = min_sell_price * 1.40  # 1사이클 내 현실적 최고 상승 상한선 (+40%)으로 30단계 촘촘하게 재조정
 
     for i in range(1, num_tiers + 1):
         tier_price = min_sell_price * ((v_max_share_price / min_sell_price) ** (i / num_tiers))

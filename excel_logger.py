@@ -154,7 +154,7 @@ def log_portfolio_to_excel():
                 
                 chart2 = LineChart()
                 chart2.title = "🎯 총수익률(%) 및 현금 추이"
-                chart2.style = 13
+                chart2.style = 11
                 chart2.y_axis.title = "수익률 (%)"
                 chart2.x_axis.title = "기록일시"
                 chart2.width = 20
