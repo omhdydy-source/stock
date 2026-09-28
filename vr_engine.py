@@ -174,7 +174,7 @@ def calculate_vr_cycle(deposit=None, withdrawal=0.0):
     day_count = min(14, max(1, days_passed + 1))
     
     cycle_updated = False
-    if days_passed >= 14:
+    if days_passed >= 13:
         state["V"] = next_V
         state["cycle"] += 1
         state["last_cycle_date"] = today_dt.strftime("%Y-%m-%d")
