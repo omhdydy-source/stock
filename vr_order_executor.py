@@ -170,6 +170,16 @@ def execute_vr_orders(live_execute=False, force=False):
                 success_count += 1
             time.sleep(0.3)
         print(f"✅ 모든 VR 예약 주문 전송 완료! (성공: {success_count}/{len(orders_to_place)})")
+        
+        # 실계좌 주문 전송 완료 시 마지막 주문일자(last_cycle_date)를 오늘로 갱신
+        try:
+            from vr_engine import load_vr_state, save_vr_state
+            st = load_vr_state()
+            st["last_cycle_date"] = datetime.now().strftime("%Y-%m-%d")
+            save_vr_state(st)
+            print(f"📅 [상태 갱신] 마지막 주문일자(last_cycle_date)가 오늘({st['last_cycle_date']})로 갱신되었습니다.")
+        except Exception as e:
+            print(f"⚠️ 상태 갱신 중 오류 발생: {e}")
     else:
         print(f"💡 (드라이프런 모드)")
 
