@@ -100,10 +100,13 @@ def send_live_order(operation_id, payload_input):
 def execute_vr_orders(live_execute=False, force=False):
     print("🚀 [실계좌 VR 5.0 스마트 그물망 검사기 가동]")
     
-    # 1단계: 로컬 주기 정보 출력 (시간에 따른 강제 차단 해제)
+    # 1단계: 로컬 2주 주기 락 메커니즘 검사 (14일 미경과 시 무조건 중복 방지 차단)
     rep = calculate_vr_cycle()
     days_passed = rep.get("days_passed", 0)
-    print(f"ℹ️ [주기 상태] 마지막 리밸런싱/주문일로부터 {days_passed}일 경과됨.")
+    if days_passed < 14 and not force:
+        print(f"🛡️ [2주 주기 락 메커니즘] 마지막 리밸런싱/주문일로부터 아직 14일이 경과하지 않았습니다. (현재 {days_passed}/14일 경과)")
+        print("💡 중복 예약 주문 방지를 위해 이번 실행은 안전하게 차단(스킵)합니다. (--force 인자로 강제 실행 가능)")
+        return []
 
     # 2단계: 14일 경과 시 계좌 실제 예약 주문 존재 여부 검사
     has_orders, api_success = check_existing_reserved_orders()
