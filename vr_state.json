@@ -1,8 +1,8 @@
 {
   "ticker": "PORTFOLIO_TOTAL",
-  "cycle": 1,
-  "V": 17216.79,
-  "Pool": 2850.37,
+  "cycle": 2,
+  "V": 18338.593,
+  "Pool": 11218.03,
   "G": 10.0,
   "mode": "lump_sum",
   "deposit_amount": 0.0,
@@ -11,7 +11,7 @@
   "tqqq_qty": 213.0,
   "tqqq_avg_p": 70.76,
   "start_date": "2026-07-20",
-  "last_cycle_date": "2026-09-28",
+  "last_cycle_date": "2026-10-12",
   "last_update_year": 2026,
   "history": []
 }
