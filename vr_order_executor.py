@@ -103,8 +103,8 @@ def execute_vr_orders(live_execute=False, force=False):
     # 1단계: 로컬 2주 주기 락 메커니즘 검사 (14일 미경과 시 무조건 중복 방지 차단)
     rep = calculate_vr_cycle()
     days_passed = rep.get("days_passed", 0)
-    if days_passed < 14 and not force:
-        print(f"🛡️ [2주 주기 락 메커니즘] 마지막 리밸런싱/주문일로부터 아직 14일이 경과하지 않았습니다. (현재 {days_passed}/14일 경과)")
+    if days_passed < 13 and not force:
+        print(f"🛡️ [2주 주기 락 메커니즘] 마지막 리밸런싱/주문일로부터 아직 13일이 경과하지 않았습니다. (현재 {days_passed}/13일 경과)")
         print("💡 중복 예약 주문 방지를 위해 이번 실행은 안전하게 차단(스킵)합니다. (--force 인자로 강제 실행 가능)")
         return []
 
