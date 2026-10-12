@@ -45,4 +45,5 @@ jobs:
           git add vr_state.json
           git add -f vr_portfolio_log.xlsx
           git diff --staged --quiet || git commit -m "Auto-update VR 5.0 state and excel log [skip ci]"
+          git pull --rebase origin main || true
           git push

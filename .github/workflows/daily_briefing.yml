@@ -53,4 +53,5 @@ jobs:
           git add infinite_v4_state.json
           git add -f stock_portfolio_log.xlsx
           git diff --staged --quiet || git commit -m "Auto-update V4.0 state and excel log [skip ci]"
+          git pull --rebase origin main || true
           git push
